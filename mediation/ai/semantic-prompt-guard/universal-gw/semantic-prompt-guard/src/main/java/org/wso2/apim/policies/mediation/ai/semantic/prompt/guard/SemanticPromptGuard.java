@@ -198,14 +198,12 @@ public class SemanticPromptGuard extends AbstractMediator implements ManagedLife
             throw new IllegalArgumentException("No embedding providers configured in API Manager.");
         }
 
-        EmbeddingProviderConfigurationDTO providerDto =
-                apimConfig.getEmbeddingProvider();
-        Map<String, String> providerConfig = providerDto.getProperties();
+        EmbeddingProviderConfigurationDTO providerDto = apimConfig.getEmbeddingProvider();
         String providerType = providerDto.getType();
 
         for (EmbeddingProviderService provider : providers) {
             if (provider.getType().equalsIgnoreCase(providerType)) {
-                provider.init(providerConfig);
+                provider.init();
                 return provider;
             }
         }
