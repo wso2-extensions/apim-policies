@@ -4,18 +4,18 @@ The **Word Count Guardrail** is a custom Synapse mediator for **WSO2 API Manager
 
 ---
 
-## ✨ Features
+## Features
 
-- ✅ Validate payload content by counting words
-- ✅ Define **minimum and maximum word count thresholds**
-- ✅ Target specific fields in JSON payloads using **JSONPath**
-- ✅ Optionally **invert validation logic** (e.g., allow only content *outside* the specified word range)
-- ✅ Trigger fault sequences on rule violations
-- ✅ Include optional **assessment messages** in error responses for better observability
+- Validate payload content by counting words
+- Define **minimum and maximum word count thresholds**
+- Target specific fields in JSON payloads using **JSONPath**
+- Optionally **invert validation logic** (e.g., allow only content *outside* the specified word range)
+- Trigger fault sequences on rule violations
+- Include optional **assessment messages** in error responses for better observability
 
 ---
 
-## 🛠️ Prerequisites
+## Prerequisites
 
 - Java 11 (JDK)
 - Maven 3.6.x or later
@@ -23,7 +23,7 @@ The **Word Count Guardrail** is a custom Synapse mediator for **WSO2 API Manager
 
 ---
 
-## 📦 Building the Project
+## Building the Project
 
 To compile and package the mediator:
 
@@ -33,7 +33,7 @@ mvn clean install
 
 > ℹ️ This will generate a `.zip` file in the `target/` directory containing the mediator JAR, policy-definition.json and artifact.j2.
 
-## 🚀 How to Use
+## How to Use
 
 Follow these steps to integrate the Word Count Guardrail policy into your WSO2 API Manager instance:
 
@@ -66,7 +66,7 @@ Follow these steps to integrate the Word Count Guardrail policy into your WSO2 A
 
 ---
 
-## 🧾 Example Policy Configuration
+## Example Policy Configuration
 
 1. Create an AI API using Mistral AI.
 2. Add the Word Count Guardrail policy to the API with the following configuration:
