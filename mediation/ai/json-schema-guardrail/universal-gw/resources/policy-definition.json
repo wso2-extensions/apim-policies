@@ -3,7 +3,7 @@
   "name": "JSONSchemaGuardrail",
   "displayName": "JSON Schema Guardrail",
   "version": "v1.0",
-  "description": "Validate the request or response to contain a JSON that adheres to a defined schema",
+  "description": "Enforces that the request or response adheres to a defined JSON schema. If a violation is detected, the guardrail intervenes and returns an error response.",
   "applicableFlows": [
     "request",
     "response"
@@ -29,7 +29,7 @@
     {
       "name": "schema",
       "displayName": "JSON Schema",
-      "description": "The JSON Schema used to validate the structure of the content.",
+      "description": "The JSON Schema used to enforce the structure of the content.",
       "required": true,
       "type": "JSON",
       "allowedValues": []
@@ -45,7 +45,7 @@
     {
       "name": "invert",
       "displayName": "Invert the Decision",
-      "description": "Inverts the guardrail decision so that it fails if the content matches the defined schema.",
+      "description": "If enabled, inverts the guardrail blocking decision, causing the guardrail to intervene and return an error response when the content matches the defined schema.",
       "required": false,
       "type": "Boolean",
       "allowedValues": []

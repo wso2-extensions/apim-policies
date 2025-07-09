@@ -4,18 +4,18 @@ The **JSON Schema Guardrail** is a custom Synapse mediator for **WSO2 API Manage
 
 ---
 
-## ✨ Features
+## Features
 
-- ✅ Validate payload structure and fields using **JSON Schema**
-- ✅ Target specific segments of a payload using **JSONPath**
-- ✅ Support for **inverted validation** (fail when schema matches)
-- ✅ **Guardrail assessment** for better observability on violations
-- ✅ Works on both **request and response** flows
-- ✅ Integrates with WSO2 **fault sequences** on failure
+- Validate payload structure and fields using **JSON Schema**
+- Target specific segments of a payload using **JSONPath**
+- Support for **inverted validation** (fail when schema matches)
+- **Guardrail assessment** for better observability on violations
+- Works on both **request and response** flows
+- Integrates with WSO2 **fault sequences** on failure
 
 ---
 
-## 🛠️ Prerequisites
+## Prerequisites
 
 - Java 11 (JDK)
 - Maven 3.6.x or later
@@ -23,7 +23,7 @@ The **JSON Schema Guardrail** is a custom Synapse mediator for **WSO2 API Manage
 
 ---
 
-## 📦 Building the Project
+## Building the Project
 
 To compile and package the mediator:
 
@@ -35,7 +35,7 @@ mvn clean install
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 Follow these steps to integrate the JSON Schema Guardrail policy into your WSO2 API Manager instance:
 
@@ -68,9 +68,9 @@ cp json-schema-guardrail/org.wso2.apim.policies.mediation.ai.json-schema-guardra
 
 ---
 
-## 🧾 Example Policy Configuration
+## Example Policy Configuration
 
-1. Create an AI API using Mistral AI.
+1. Create an AI API with Mistral AI.
 2. Add the JSON Schema Guardrail policy to the API with the following configuration:
 
 | Field                       | Example                        |
@@ -149,7 +149,7 @@ The following guardrail error response will be returned with http status code `4
 
 ---
 
-## ⚠️ Limitations
+## Limitations
 
 The **JSON Schema Guardrail** uses the following regular expression to extract json portions from the inspected content:
 

@@ -3,7 +3,7 @@
   "name": "ContentLengthGuardrail",
   "version": "v1.0",
   "displayName": "Content Length Guardrail",
-  "description": "Validates the request or response content to ensure it complies with the specified minimum and maximum content length limits.",
+  "description": "Validates the request or response content to ensure it complies with the specified minimum and maximum content length limits. If a violation is detected, the guardrail intervenes and returns an error response.",
   "applicableFlows": [
     "request",
     "response"
@@ -55,7 +55,7 @@
     {
       "name": "invert",
       "displayName": "Invert the Guardrail Decision",
-      "description": "If enabled, inverts the guardrail blocking decision, causing the guardrail to intervene and return an error response when a match is found in the content.",
+      "description": "If enabled, inverts the guardrail blocking decision, causing the guardrail to intervene and return an error response when the content is within the specified limits.",
       "type": "Boolean",
       "allowedValues": [],
       "defaultValue": "false",
