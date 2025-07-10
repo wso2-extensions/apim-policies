@@ -4,18 +4,18 @@ The **URL Guardrail** is a custom Synapse mediator for **WSO2 API Manager Univer
 
 ---
 
-## ✨ Features
+## Features
 
-- ✅ Validate payload content by extracting and checking URLs
-- ✅ Perform either **DNS resolution** or **HTTP HEAD** validation
-- ✅ Target specific fields in JSON payloads using **JSONPath**
-- ✅ Configure custom **timeout** for validation checks
-- ✅ Trigger fault sequences on rule violations
-- ✅ Include optional **assessment messages** in error responses for better observability
+- Validate payload content by extracting and checking URLs
+- Perform either **DNS resolution** or **HTTP HEAD** validation
+- Target specific fields in JSON payloads using **JSONPath**
+- Configure custom **timeout** for validation checks
+- Trigger fault sequences on rule violations
+- Include optional **assessment messages** in error responses for better observability
 
 ---
 
-## 🛠️ Prerequisites
+## Prerequisites
 
 - Java 11 (JDK)
 - Maven 3.6.x or later
@@ -23,7 +23,7 @@ The **URL Guardrail** is a custom Synapse mediator for **WSO2 API Manager Univer
 
 ---
 
-## 📦 Building the Project
+## Building the Project
 
 To compile and package the mediator:
 
@@ -35,7 +35,7 @@ mvn clean install
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 Follow these steps to integrate the URL Guardrail policy into your WSO2 API Manager instance:
 
@@ -67,7 +67,7 @@ cp url-guardrail/org.wso2.apim.policies.mediation.ai.url-guardrail-<version>.jar
 
 ---
 
-## 🧾 Example Policy Configuration
+## Example Policy Configuration
 
 1. Create an AI API using Mistral AI.
 2. Add the URL Guardrail policy to the API with the following configuration:
@@ -112,12 +112,12 @@ The following guardrail error response will be returned with http status code `4
 
 ---
 
-## ⚠️ Limitations
+## Limitations
 
 The **URL Guardrail** uses the following regular expression to extract URLs from the inspected content:
 
 ```regex
-https?://[^\\s,"'{}\[\]\\`]+
+https?://[^\\s,"'{}\[\]\\`*]+
 ```
 
 This pattern is designed to match common URL formats in textual content. However, it may **overmatch** or extract **unintended portions** as URLs in certain edge cases.

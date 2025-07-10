@@ -20,6 +20,7 @@
 
 package org.wso2.apim.policies.mediation.ai.prompt.template;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.axis2.AxisFault;
@@ -99,6 +100,7 @@ import java.util.regex.Pattern;
  */
 public class PromptTemplate extends AbstractMediator implements ManagedLifecycle {
     private static final Log logger = LogFactory.getLog(PromptTemplate.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private String name;
     private String promptTemplateConfig;
@@ -202,9 +204,7 @@ public class PromptTemplate extends AbstractMediator implements ManagedLifecycle
                         for (String pair : pairs) {
                             String[] keyValue = pair.split("=", 2);
                             if (keyValue.length == 2) {
-                                String key = URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8);
-                                String value = URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
-                                params.put(key, value);
+                                params.put(keyValue[0], keyValue[1]);
                             }
                         }
                     }
@@ -216,8 +216,10 @@ public class PromptTemplate extends AbstractMediator implements ManagedLifecycle
                         resolvedPrompt = resolvedPrompt.replace(placeholder, entry.getValue());
                     }
 
-                    // Directly replace in updatedJsonContent
-                    updatedJsonContent = updatedJsonContent.replace(matched, resolvedPrompt);
+                    // Properly escape and directly replace in updatedJsonContent
+                    String escapedPrompt = objectMapper.writeValueAsString(resolvedPrompt)
+                            .replaceAll(PromptTemplateConstants.TEXT_CLEAN_REGEX, "");
+                    updatedJsonContent = updatedJsonContent.replace(matched, escapedPrompt);
                 } else {
                     logger.warn("No prompt template found for: " + templateName);
                 }

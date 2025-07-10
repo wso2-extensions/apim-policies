@@ -24,7 +24,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.TypeRef;
 import org.apache.axis2.AxisFault;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -144,13 +143,14 @@ public class PromptDecorator extends AbstractMediator implements ManagedLifecycl
             documentContext.set(jsonPath, updatedValue);
 
         } else if (PromptDecoratorConstants.DecorationType.ARRAY.equals(type)) {
-            // Read the existing array properly
-            List<Object> existingArray = documentContext.read(jsonPath, new TypeRef<>() {
-            });
+            // Read the existing array from the document
+            Object existingValue = documentContext.read(jsonPath);
+            List<Object> existingArray = (existingValue instanceof List)
+                    ? new ArrayList<>((List<?>) existingValue): new ArrayList<>();
 
-            // Parse the decoration into a List<Object>
-            List<Object> decorationList = JsonPath.parse(decoration).read("$", new TypeRef<>() {
-            });
+            Object decorationValue = JsonPath.parse(decoration).read("$");
+            List<Object> decorationList = (decorationValue instanceof List)
+                    ? new ArrayList<>((List<?>) decorationValue): new ArrayList<>();
 
             List<Object> updatedArray = new ArrayList<>();
 
