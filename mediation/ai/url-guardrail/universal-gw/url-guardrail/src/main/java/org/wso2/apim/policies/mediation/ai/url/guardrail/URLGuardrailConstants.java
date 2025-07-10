@@ -33,5 +33,5 @@ public class URLGuardrailConstants {
     public static final String INTERVENING_GUARDRAIL = "interveningGuardrail";
     public static final String DIRECTION = "direction";
     public static final String URL_GUARDRAIL = "URL_GUARDRAIL";
-    public static final String URL_REGEX = "https?://[^\\s,\"'{}\\[\\]\\\\`]+";
+    public static final String URL_REGEX = "https?://[^\\s,\"'{}\\[\\]\\\\`*]+";
 }
