@@ -24,5 +24,6 @@ public class PromptTemplateConstants {
     public static final String PROMPT_TEMPLATE_REGEX = "template://[a-zA-Z0-9_-]+\\?[^\\s\"']*";
     public static final String PROMPT_TEMPLATE_NAME = "name";
     public static final String PROMPT_TEMPLATE_PROMPT = "prompt";
+    public static final String TEXT_CLEAN_REGEX = "^\"|\"$";
     public static final int APIM_INTERNAL_EXCEPTION_CODE = 900967;
 }
