@@ -1,13 +1,12 @@
 /*
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
  *
- * Copyright (c) 2025 WSO2 LLC. (http://www.wso2.org) All Rights Reserved.
- *
- * WSO2 Inc. licenses this file to you under the Apache License,
+ * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +14,6 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
 
 package org.wso2.apim.policies.mediation.ai.pii.masking.regex;
@@ -67,7 +65,7 @@ public class PIIMaskingRegex extends AbstractMediator implements ManagedLifecycl
     private String piiEntities;
     private String jsonPath = "";
     private boolean redact = false;
-    private final Map<String, Pattern> patterns = new HashMap<>();
+    private Map<String, Pattern> patterns = Collections.emptyMap();
 
     /**
      * Initializes the PIIMaskingRegex mediator.
@@ -295,6 +293,7 @@ public class PIIMaskingRegex extends AbstractMediator implements ManagedLifecycl
             Gson gson = new Gson();
             Type listType = new TypeToken<List<Map<String, String>>>() {}.getType();
             List<Map<String, String>> templates = gson.fromJson(piiEntities, listType);
+            Map<String, Pattern> newPatterns = new HashMap<>();
 
             for (Map<String, String> item : templates) {
                 String piiEntity = item.get(PIIMaskingRegexConstants.PII_ENTITY);
@@ -305,7 +304,9 @@ public class PIIMaskingRegex extends AbstractMediator implements ManagedLifecycl
                             "Missing required fields 'piiEntity' and 'piiRegex' in PII entry: " + item);
                 }
 
-                patterns.put(piiEntity, Pattern.compile(piiRegex));
+                newPatterns.put(piiEntity, Pattern.compile(piiRegex));
+                // Safely replace the reference with an immutable map
+                this.patterns = Collections.unmodifiableMap(newPatterns);
             }
             if (logger.isDebugEnabled()) {
                 logger.debug("PII regex patterns compiled successfully: " + piiEntities);
