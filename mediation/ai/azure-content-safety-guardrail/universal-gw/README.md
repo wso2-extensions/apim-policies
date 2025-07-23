@@ -97,7 +97,7 @@ This example demonstrates how the `Azure Content Safety Guardrail` can be used t
 | `Hate`                      | `2`                      |
 | `Sexual`                    | `2`                      |
 | `Self Harm`                 | `2`                      |
-| `Violance`                  | `2`                      |
+| `Violence`                  | `2`                      |
 | `JSON Path`                 | `$.messages[-1].content` |
 | `Passthrough on Error`      | `false`                  |
 | `Show Guardrail Assessment` | `false`                  |
