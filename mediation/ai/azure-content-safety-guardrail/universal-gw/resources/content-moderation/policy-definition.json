@@ -65,7 +65,7 @@
     {
       "name": "jsonPath",
       "displayName": "JSON Path",
-      "description": "Specify the JSONPath expression that identifies the location where prompt decoration should be applied.",
+      "description": "Specify the JSONPath expression that identifies the content location for validation.",
       "required": false,
       "type": "String",
       "allowedValues": []
