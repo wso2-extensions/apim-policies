@@ -189,7 +189,7 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         // Remove quotes at beginning and end
         String cleanedText = content.replaceAll(AzureContentSafetyConstants.TEXT_CLEAN_REGEX, "").trim();
 
-        // Check if any extracted value by json path matches the regex pattern
+        // Perform content safety validation on the cleaned text using the Azure Content Safety API
         return validate(cleanedText, messageContext);
     }
 
