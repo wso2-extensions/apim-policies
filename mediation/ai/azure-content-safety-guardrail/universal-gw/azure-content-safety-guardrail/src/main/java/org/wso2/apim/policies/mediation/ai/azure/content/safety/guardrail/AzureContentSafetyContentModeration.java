@@ -274,7 +274,7 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
 
         assessmentObject.put(AzureContentSafetyConstants.ASSESSMENT_ACTION, "GUARDRAIL_INTERVENED");
         assessmentObject.put(AzureContentSafetyConstants.INTERVENING_GUARDRAIL, this.name);
-        assessmentObject.put(AzureContentSafetyConstants.DIRECTION, isResponse? "RESPONSE" : "REQUEST");
+        assessmentObject.put(AzureContentSafetyConstants.DIRECTION, isResponse ? "RESPONSE" : "REQUEST");
         assessmentObject.put(AzureContentSafetyConstants.ASSESSMENT_REASON,
                 "Violation of azure content safety content moderation detected.");
 
