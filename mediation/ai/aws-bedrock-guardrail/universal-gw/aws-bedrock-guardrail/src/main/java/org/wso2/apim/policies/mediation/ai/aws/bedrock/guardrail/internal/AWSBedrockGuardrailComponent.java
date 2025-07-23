@@ -45,7 +45,8 @@ public class AWSBedrockGuardrailComponent {
     }
 
     protected void unbindProvider(GuardrailProviderService provider) {
-        if (AWSBedrockConstants.GUARDRAIL_PROVIDER_TYPE.equalsIgnoreCase(provider.getType()))
+        if (AWSBedrockConstants.GUARDRAIL_PROVIDER_TYPE.equalsIgnoreCase(provider.getType())) {
             ServiceReferenceHolder.getInstance().setGuardrailProviderService(null);
+        }
     }
 }
