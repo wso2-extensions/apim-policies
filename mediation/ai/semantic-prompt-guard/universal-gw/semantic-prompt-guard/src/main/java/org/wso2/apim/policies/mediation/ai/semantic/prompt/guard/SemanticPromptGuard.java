@@ -275,7 +275,7 @@ public class SemanticPromptGuard extends AbstractMediator implements ManagedLife
             return true;
         }
 
-        // If no JSON path is specified, apply piiEntities to the entire JSON content
+        // If no JSON path is specified, apply validation rules to the entire JSON content
         if (jsonPath == null || jsonPath.trim().isEmpty()) {
             return isAllowed(jsonContent, messageContext);
         }
