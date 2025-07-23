@@ -400,7 +400,7 @@ public class SemanticPromptGuard extends AbstractMediator implements ManagedLife
         assessmentObject.put(SemanticPromptGuardConstants.ASSESSMENT_ACTION, "GUARDRAIL_INTERVENED");
         assessmentObject.put(SemanticPromptGuardConstants.INTERVENING_GUARDRAIL, name);
         assessmentObject.put(SemanticPromptGuardConstants.DIRECTION,
-                messageContext.isResponse()? "RESPONSE" : "REQUEST");
+                messageContext.isResponse() ? "RESPONSE" : "REQUEST");
         assessmentObject.put(SemanticPromptGuardConstants.ASSESSMENT_REASON, "Violation of guard prompts detected.");
 
         if (showAssessment) {
