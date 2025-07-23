@@ -70,7 +70,7 @@
     {
       "name": "passthroughOnError",
       "displayName": "Passthrough on Error",
-      "description": "If enabled, the request or response is passed through without validation when the Azure Content Safety service is unavailable. Otherwise, a guardrail validation error is triggered.",
+      "description": "If enabled, the request or response is passed through without validation when the AWS Bedrock Guardrails service is unavailable. Otherwise, a guardrail validation error is triggered.",
       "required": false,
       "defaultValue": "false",
       "type": "Boolean",
