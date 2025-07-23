@@ -365,7 +365,7 @@ public class AWSBedrockGuardrail extends AbstractMediator implements ManagedLife
     private void maskPIIEntities(JsonNode sipNode, MessageContext context) throws AxisFault {
         if (logger.isDebugEnabled()) {
             logger.debug("PII masking applied by Bedrock service. Masking PII in "
-                    + (context.isResponse()? "response." : "request."));
+                    + (context.isResponse() ? "response." : "request."));
         }
 
         String originalPayload = extractJsonContent(context);
