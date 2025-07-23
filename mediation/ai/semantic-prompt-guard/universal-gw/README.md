@@ -22,13 +22,13 @@ This policy supports fine-grained control over AI API traffic to enhance safety,
 
 - Triggered when only **deny prompts** are defined in the policy configuration
 - If the request content is **semantically similar** to any deny prompt (above the defined threshold), the request is **blocked**
-- Ideal for blacklisting known harmful, irrelevant, or undesired intents
+- Ideal for deny-listing known harmful, irrelevant, or undesired intents
 
 ### 2. **Allow Mode**
 
 - Triggered when only **allow prompts** are configured
 - The request is allowed **only if** its content is **semantically similar** to at least one allow prompt (above the threshold)
-- Useful for whitelisting known safe or approved request types
+- Useful for allow-listing known safe or approved request types
 
 ### 3. **Hybrid Mode**
 
