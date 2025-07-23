@@ -365,7 +365,7 @@ public class SemanticPromptGuard extends AbstractMediator implements ManagedLife
      * Computes the dot product of two vectors.
      */
     private double dotProduct(double[] a, double[] b) {
-        double result = 0.0f;
+        double result = 0.0;
         for (int i = 0; i < a.length; i++) {
             result += a[i] * b[i];
         }
