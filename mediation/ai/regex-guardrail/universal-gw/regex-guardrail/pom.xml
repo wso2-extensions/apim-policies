@@ -22,7 +22,7 @@
 
     <groupId>org.wso2.am.policies</groupId>
     <artifactId>org.wso2.am.policies.mediation.ai.regex-guardrail</artifactId>
-    <version>0.0.3-SNAPSHOT</version>
+    <version>0.0.10</version>
     <packaging>bundle</packaging>
     <name>WSO2 APIM Mediation Policies - Regular Expression Guardrail</name>
 
@@ -30,7 +30,7 @@
         <connection>scm:git:https://github.com/wso2-extensions/apim-policies.git</connection>
         <url>https://github.com/wso2-extensions/apim-policies.git</url>
         <developerConnection>scm:git:https://github.com/wso2-extensions/apim-policies.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>v0.0.10-regex-guardrail</tag>
     </scm>
 
     <distributionManagement>
