@@ -24,9 +24,29 @@
 
     <groupId>org.wso2.apim.policies</groupId>
     <artifactId>org.wso2.apim.policies.mediation.ai.content-length-guardrail</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>0.0.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <name>WSO2 APIM Mediation Policies - Content Length Guardrail</name>
+
+    <scm>
+        <connection>scm:git:https://github.com/wso2-extensions/apim-policies.git</connection>
+        <url>https://github.com/wso2-extensions/apim-policies.git</url>
+        <developerConnection>scm:git:https://github.com/wso2-extensions/apim-policies.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>nexus-releases</id>
+            <name>WSO2 Release Distribution Repository</name>
+            <url>https://maven.wso2.org/nexus/service/local/staging/deploy/maven2/</url>
+        </repository>
+        <snapshotRepository>
+            <id>wso2.snapshots</id>
+            <name>Apache Snapshot Repository</name>
+            <url>https://maven.wso2.org/nexus/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <properties>
         <maven.compiler.release>9</maven.compiler.release>

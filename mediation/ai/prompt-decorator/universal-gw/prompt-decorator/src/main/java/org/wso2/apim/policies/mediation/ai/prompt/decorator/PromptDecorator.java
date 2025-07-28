@@ -1,13 +1,12 @@
 /*
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
  *
- * Copyright (c) 2025 WSO2 LLC. (http://www.wso2.org) All Rights Reserved.
- *
- * WSO2 Inc. licenses this file to you under the Apache License,
+ * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +14,6 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
 
 package org.wso2.apim.policies.mediation.ai.prompt.decorator;
@@ -24,7 +22,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.TypeRef;
 import org.apache.axis2.AxisFault;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -144,13 +141,14 @@ public class PromptDecorator extends AbstractMediator implements ManagedLifecycl
             documentContext.set(jsonPath, updatedValue);
 
         } else if (PromptDecoratorConstants.DecorationType.ARRAY.equals(type)) {
-            // Read the existing array properly
-            List<Object> existingArray = documentContext.read(jsonPath, new TypeRef<>() {
-            });
+            // Read the existing array from the document
+            Object existingValue = documentContext.read(jsonPath);
+            List<Object> existingArray = (existingValue instanceof List)
+                    ? new ArrayList<>((List<?>) existingValue): new ArrayList<>();
 
-            // Parse the decoration into a List<Object>
-            List<Object> decorationList = JsonPath.parse(decoration).read("$", new TypeRef<>() {
-            });
+            Object decorationValue = JsonPath.parse(decoration).read("$");
+            List<Object> decorationList = (decorationValue instanceof List)
+                    ? new ArrayList<>((List<?>) decorationValue): new ArrayList<>();
 
             List<Object> updatedArray = new ArrayList<>();
 

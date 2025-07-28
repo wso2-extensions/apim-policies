@@ -1,13 +1,12 @@
 /*
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
  *
- * Copyright (c) 2025 WSO2 LLC. (http://www.wso2.org) All Rights Reserved.
- *
- * WSO2 Inc. licenses this file to you under the Apache License,
+ * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +14,6 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
 
 package org.wso2.apim.policies.mediation.ai.url.guardrail;
@@ -37,14 +35,8 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.URI;
 import java.net.URL;
-import java.net.http.HttpClient;
-import java.net.http.HttpClient.Version;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -236,24 +228,23 @@ public class URLGuardrail extends AbstractMediator implements ManagedLifecycle {
      * @return true if reachable, false otherwise
      */
     private boolean checkUrl(String target) {
-        HttpClient client = HttpClient.newBuilder()
-                .version(Version.HTTP_1_1) // Explicitly use HTTP/1.1
-                .connectTimeout(Duration.ofMillis(timeout))
-                .build();
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(target))
-                .timeout(Duration.ofMillis(timeout))
-                .method("HEAD", HttpRequest.BodyPublishers.noBody()) // HEAD request
-                .header("User-Agent", "URLValidator/1.0")
-                .build();
-
+        HttpURLConnection connection = null;
         try {
-            HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
-            int statusCode = response.statusCode();
-            return statusCode >= 200 && statusCode < 400;
-        } catch (IOException | InterruptedException e) {
+            URL url = new URL(target);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("HEAD"); // Use HEAD request
+            connection.setConnectTimeout(timeout); // in milliseconds
+            connection.setReadTimeout(timeout);    // optional
+            connection.setRequestProperty("User-Agent", "URLValidator/1.0");
+
+            int statusCode = connection.getResponseCode();
+            return statusCode >= HttpURLConnection.HTTP_OK && statusCode < HttpURLConnection.HTTP_BAD_REQUEST;
+        } catch (IOException e) {
             return false;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 

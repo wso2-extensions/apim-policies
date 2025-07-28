@@ -3,7 +3,7 @@
   "name": "URLGuardrail",
   "version": "v1.0",
   "displayName": "URL Guardrail",
-  "description": "Extract and Validate URLs included in the request or response content by either performing a DNS lookup or a connection establishment.",
+  "description": "Extract and Validate URLs included in the request or response content by either performing a DNS lookup or a connection establishment. If a violation is detected, the guardrail intervenes and returns an error response.",
   "applicableFlows": [
     "request",
     "response"

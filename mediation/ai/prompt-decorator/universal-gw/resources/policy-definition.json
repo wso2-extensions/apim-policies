@@ -46,7 +46,7 @@
     {
       "name": "append",
       "displayName": "Append Decorated Content",
-      "description": "If true, the decorated content will be appended to the prompt instead of replacing it.",
+      "description": "If true, the decorated content will be appended to the prompt. Otherwise, it will be prepended.",
       "type": "Boolean",
       "allowedValues": [],
       "required": false
