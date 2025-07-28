@@ -22,7 +22,7 @@
 
     <groupId>org.wso2.am.policies</groupId>
     <artifactId>org.wso2.am.policies.mediation.ai.prompt-decorator</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <name>WSO2 APIM Mediation Policies - AI Prompt Decorator</name>
 
@@ -30,7 +30,7 @@
         <connection>scm:git:https://github.com/wso2-extensions/apim-policies.git</connection>
         <url>https://github.com/wso2-extensions/apim-policies.git</url>
         <developerConnection>scm:git:https://github.com/wso2-extensions/apim-policies.git</developerConnection>
-        <tag>v1.0.0-prompt-decorator</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <distributionManagement>
