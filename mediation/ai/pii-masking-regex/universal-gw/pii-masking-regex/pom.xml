@@ -21,13 +21,10 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.wso2.apim.policies</groupId>
-        <artifactId>apim.policies.mediation.ai</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-    </parent>
 
-    <artifactId>org.wso2.apim.policies.mediation.ai.pii-masking-regex</artifactId>
+    <groupId>org.wso2.am.policies</groupId>
+    <artifactId>org.wso2.am.policies.mediation.ai.pii-masking-regex</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <name>WSO2 APIM Mediation Policies - PII Masking with Regular Expression</name>
 
