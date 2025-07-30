@@ -3,7 +3,7 @@
   "name": "WordCountGuardrail",
   "version": "v1.0",
   "displayName": "Word Count Guardrail",
-  "description": "Validates the request or response content to ensure it complies with the specified minimum and maximum sentence count limits. If a violation is detected, the guardrail intervenes and returns an error response.",
+  "description": "Validates the request or response content to ensure it complies with the specified minimum and maximum word count limits. If a violation is detected, the guardrail intervenes and returns an error response.",
   "applicableFlows": [
     "request",
     "response"
