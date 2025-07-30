@@ -1,8 +1,8 @@
 {
   "category": "Mediation",
-  "name": "AWS Bedrock Guardrail",
+  "name": "AWSBedrockGuardrail",
   "displayName": "AWS Bedrock Guardrail",
-  "version": "v1.0",
+  "version": "v1.1",
   "description": "Integrate AWS Bedrock Guardrails to enhance the safety of AI APIs. AWS Bedrock Guardrails offer configurable protections designed to help developers build generative AI applications responsibly and at scale. This policy mediates both request and response content by validating it through the AWS Bedrock Guardrails service, and enforces the service’s decision to allow, block, or mask content accordingly.",
   "applicableFlows": [
     "request",
