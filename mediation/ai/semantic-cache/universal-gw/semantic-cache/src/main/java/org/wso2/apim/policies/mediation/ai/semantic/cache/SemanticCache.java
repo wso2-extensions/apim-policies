@@ -102,12 +102,18 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         
         this.embeddingProvider = ServiceReferenceHolder.getInstance().getEmbeddingProvider();
         this.vectorDBProvider = ServiceReferenceHolder.getInstance().getVectorDBProvider();
+
+        if (this.embeddingProvider == null || this.vectorDBProvider == null) {
+        throw new RuntimeException("Required services not available. EmbeddingProvider: " +
+             (this.embeddingProvider != null) + ", VectorDBProvider: " +
+             (this.vectorDBProvider != null));
+        }
         
         try {
-            int embeddingDimension = this.embeddingProvider.getEmbeddingDimension();
+            int embeddingDimension = embeddingProvider.getEmbeddingDimension();
             Map<String, String> indexConfig = new HashMap<>();
             indexConfig.put(SemanticCacheConstants.EMBEDDING_DIMENSION, String.valueOf(embeddingDimension));
-            this.vectorDBProvider.createIndex(indexConfig);
+            vectorDBProvider.createIndex(indexConfig);
         } catch (APIManagementException e) {
             logger.error("Error initializing Semantic Cache mediator.", e);
             throw new RuntimeException("Failed to initialize Semantic Cache", e);
@@ -141,15 +147,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         if (logger.isDebugEnabled()) {
             logger.debug("Beginning semantic cache mediation.");
         }
-        
-        SynapseLog synLog = getLog(messageContext);
-        if (synLog.isTraceOrDebugEnabled()) {
-            synLog.traceOrDebug("Start : SemanticCache mediator");
-            if (synLog.isTraceTraceEnabled()) {
-                synLog.traceTrace("Message : " + messageContext.getEnvelope());
-            }
-        }
-        
+
         boolean result = true;
         try {
             if (messageContext.isResponse()) {
@@ -161,11 +159,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
             logger.error("Exception occurred during semantic cache mediation.", e);
             return false;
         }
-        
-        if (synLog.isTraceOrDebugEnabled()) {
-            synLog.traceOrDebug("End : SemanticCache mediator");
-        }
-        
+
         return result;
     }
 
@@ -193,14 +187,18 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
             return true;
         }
 
-        double[] embeddings = this.embeddingProvider.getEmbedding(contentToEmbed);
+        double[] embeddings = embeddingProvider.getEmbedding(contentToEmbed);
         Map<String, String> filter = new HashMap<>();
-        filter.put(SemanticCacheConstants.API_ID, (String) messageContext.getProperty(SemanticCacheConstants.API_UUID));
-        filter.put(SemanticCacheConstants.THRESHOLD, String.valueOf(this.threshold));
+        String apiId = (String) messageContext.getProperty(SemanticCacheConstants.API_UUID);
+        if (apiId != null) {
+            filter.put(SemanticCacheConstants.API_ID, apiId);
+        }
 
-        CachableResponse cachedResponse = this.vectorDBProvider.retrieve(embeddings, filter);
+        filter.put(SemanticCacheConstants.THRESHOLD, String.valueOf(threshold));
+
+        CachableResponse cachedResponse = vectorDBProvider.retrieve(embeddings, filter);
         if (cachedResponse != null && cachedResponse.getResponsePayload() != null) {
-            if (SemanticCacheConstants.HTTP_PROTOCOL_TYPE.equals(this.protocolType)
+            if (SemanticCacheConstants.HTTP_PROTOCOL_TYPE.equals(protocolType)
                     && cachedResponse.isCacheControlEnabled()) {
                 return true;
             }
@@ -231,15 +229,15 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
 
         if (JsonUtil.hasAJsonPayload(msgCtx)) {
             String jsonContent = JsonUtil.jsonPayloadToString(msgCtx);
-            if (StringUtils.isBlank(this.jsonPath)) {
+            if (StringUtils.isBlank(jsonPath)) {
                 return jsonContent;
             }
 
             try {
-                String extracted = JsonPath.read(jsonContent, this.jsonPath).toString();
+                String extracted = JsonPath.read(jsonContent, jsonPath).toString();
                 return extracted.replaceAll(SemanticCacheConstants.TEXT_CLEAN_REGEX, "").trim();
             } catch (Exception e) {
-                logger.warn("Failed to extract content using jsonPath: " + this.jsonPath, e);
+                logger.warn("Failed to extract content using jsonPath: " + jsonPath, e);
                 // Fall back to full JSON content
                 return jsonContent;
             }
@@ -275,7 +273,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
             handleException("Error creating response OM from cache - ", synCtx);
         }
 
-        if (SemanticCacheConstants.HTTP_PROTOCOL_TYPE.equals(this.protocolType)) {
+        if (SemanticCacheConstants.HTTP_PROTOCOL_TYPE.equals(protocolType)) {
             if (cachedResponse.getStatusCode() != null) {
                 msgCtx.setProperty(NhttpConstants.HTTP_SC,
                         Integer.parseInt(cachedResponse.getStatusCode()));
@@ -300,7 +298,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
             msgCtx.setProperty(Constants.Configuration.MESSAGE_TYPE,
                     clonedMap.get(Constants.Configuration.MESSAGE_TYPE));
             msgCtx.setProperty(Constants.Configuration.CONTENT_TYPE,
-                    headerProperties.get(CONTENT_TYPE));
+                    clonedMap.get(CONTENT_TYPE));
         }
 
         synCtx.setTo(null);
@@ -406,6 +404,8 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
                 try {
                     setResponseCachedTime(headers, response);
                 } catch (ParseException e) {
+                    logger.warn("Failed to parse response date header, using current time", e);
+                    response.setResponseFetchedTime(System.currentTimeMillis());
                 }
             }
 
@@ -421,7 +421,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
                 Map<String, String> filter = new HashMap<>();
                 filter.put(SemanticCacheConstants.API_ID,
                         (String) messageContext.getProperty(SemanticCacheConstants.API_UUID));
-                this.vectorDBProvider.store(embeddings, response, filter);
+                vectorDBProvider.store(embeddings, response, filter);
             } catch (APIManagementException e) {
                 logger.error("Error storing response in vector database.", e);
                 throw new RuntimeException("Failed to store response in cache", e);
@@ -468,18 +468,13 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
      * @return {@code true} if no-store directive is present, {@code false} otherwise.
      */
     public boolean isNoStore(org.apache.axis2.context.MessageContext msgCtx) {
-        ConcurrentHashMap<String, Object> headerProperties = new ConcurrentHashMap<>();
         Map<String, String> headers = (Map<String, String>) msgCtx.getProperty(
                 org.apache.axis2.context.MessageContext.TRANSPORT_HEADERS);
-        String cacheControlHeaderValue = null;
 
-        //Copying All TRANSPORT_HEADERS to headerProperties Map.
-        for (Map.Entry<String, String> entry : headers.entrySet()) {
-            headerProperties.put(entry.getKey(), entry.getValue());
+        if (headers == null) {
+            return false;
         }
-        if (headerProperties.get(HttpHeaders.CACHE_CONTROL) != null) {
-            cacheControlHeaderValue = String.valueOf(headerProperties.get(HttpHeaders.CACHE_CONTROL));
-        }
+        String cacheControlHeaderValue = headers.get(HttpHeaders.CACHE_CONTROL);
 
         return StringUtils.isNotEmpty(cacheControlHeaderValue)
                 && cacheControlHeaderValue.contains(SemanticCacheConstants.NO_STORE_STRING);
