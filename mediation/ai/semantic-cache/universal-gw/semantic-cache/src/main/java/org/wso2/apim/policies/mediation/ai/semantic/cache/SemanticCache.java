@@ -1,8 +1,7 @@
 /*
- *
  * Copyright (c) 2025 WSO2 LLC. (http://www.wso2.org) All Rights Reserved.
  *
- * WSO2 Inc. licenses this file to you under the Apache License,
+ * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +14,6 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
 
 package org.wso2.apim.policies.mediation.ai.semantic.cache;
@@ -32,7 +30,6 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.ParseException;
 import org.apache.synapse.ManagedLifecycle;
 import org.apache.synapse.MessageContext;
-import org.apache.synapse.SynapseLog;
 import org.apache.synapse.commons.json.JsonUtil;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
@@ -51,7 +48,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
 /**
@@ -72,15 +68,13 @@ import java.util.regex.Matcher;
 public class SemanticCache extends AbstractMediator implements ManagedLifecycle {
     private static final Log logger = LogFactory.getLog(SemanticCache.class);
 
-    private String protocolType = SemanticCacheConstants.HTTP_PROTOCOL_TYPE;
     private String responseCodes = SemanticCacheConstants.ANY_RESPONSE_CODE;
     private int maxMessageSize = SemanticCacheConstants.DEFAULT_SIZE;
-    private boolean cacheControlEnabled = SemanticCacheConstants.DEFAULT_ENABLE_CACHE_CONTROL;
     private boolean addAgeHeaderEnabled = SemanticCacheConstants.DEFAULT_ADD_AGE_HEADER;
     private static final String CONTENT_TYPE = SemanticCacheConstants.CONTENT_TYPE;
     private static final String SC_NOT_MODIFIED = SemanticCacheConstants.SC_NOT_MODIFIED;
 
-    private int threshold = SemanticCacheConstants.DEFAULT_THRESHOLD;
+    private String threshold = SemanticCacheConstants.DEFAULT_THRESHOLD;
     private String jsonPath;
 
     private VectorDBProviderService vectorDBProvider;
@@ -104,9 +98,11 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         this.vectorDBProvider = ServiceReferenceHolder.getInstance().getVectorDBProvider();
 
         if (this.embeddingProvider == null || this.vectorDBProvider == null) {
-        throw new RuntimeException("Required services not available. EmbeddingProvider: " +
-             (this.embeddingProvider != null) + ", VectorDBProvider: " +
-             (this.vectorDBProvider != null));
+            throw new RuntimeException(
+                "SemanticCache initialization failed: EmbeddingProviderService or VectorDBProviderService is not available. " +
+                "EmbeddingProviderService present: " + (this.embeddingProvider != null) +
+                ", VectorDBProviderService present: " + (this.vectorDBProvider != null)
+            );
         }
         
         try {
@@ -153,7 +149,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
             if (messageContext.isResponse()) {
                 processResponseMessage(messageContext);
             } else {
-                result = processRequestMessage(messageContext);
+                result = processRequestMessage(messageContext); // Returns false if cache hit is found to stop mediation
             }
         } catch (Exception e) {
             logger.error("Exception occurred during semantic cache mediation.", e);
@@ -190,19 +186,14 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         double[] embeddings = embeddingProvider.getEmbedding(contentToEmbed);
         Map<String, String> filter = new HashMap<>();
         String apiId = (String) messageContext.getProperty(SemanticCacheConstants.API_UUID);
-        if (apiId != null) {
-            filter.put(SemanticCacheConstants.API_ID, apiId);
+        if (apiId == null) {
+            return true;
         }
-
-        filter.put(SemanticCacheConstants.THRESHOLD, String.valueOf(threshold));
+        filter.put(SemanticCacheConstants.API_ID, apiId);
+        filter.put(SemanticCacheConstants.THRESHOLD, threshold);
 
         CachableResponse cachedResponse = vectorDBProvider.retrieve(embeddings, filter);
         if (cachedResponse != null && cachedResponse.getResponsePayload() != null) {
-            if (SemanticCacheConstants.HTTP_PROTOCOL_TYPE.equals(protocolType)
-                    && cachedResponse.isCacheControlEnabled()) {
-                return true;
-            }
-
             messageContext.setResponse(true);
             replaceEnvelopeWithCachedResponse(messageContext, msgCtx, cachedResponse);
             return false;
@@ -259,31 +250,27 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
                                                    org.apache.axis2.context.MessageContext msgCtx,
                                                    CachableResponse cachedResponse) {
         try {
-            if (cachedResponse.isJson()) {
-                byte[] payload = cachedResponse.getResponsePayload();
-                OMElement response = JsonUtil.getNewJsonPayload(msgCtx, payload, 0,
-                        payload.length, false, false);
-                if (msgCtx.getEnvelope().getBody().getFirstElement() != null) {
-                    msgCtx.getEnvelope().getBody().getFirstElement().detach();
-                }
-                msgCtx.getEnvelope().getBody().addChild(response);
+            byte[] payload = cachedResponse.getResponsePayload();
+            OMElement response = JsonUtil.getNewJsonPayload(msgCtx, payload, 0,
+                    payload.length, false, false);
+            if (msgCtx.getEnvelope().getBody().getFirstElement() != null) {
+                msgCtx.getEnvelope().getBody().getFirstElement().detach();
             }
+            msgCtx.getEnvelope().getBody().addChild(response);
         } catch (AxisFault e) {
             logger.error("Error creating response OM from cache", e);
             handleException("Error creating response OM from cache - ", synCtx);
         }
 
-        if (SemanticCacheConstants.HTTP_PROTOCOL_TYPE.equals(protocolType)) {
-            if (cachedResponse.getStatusCode() != null) {
-                msgCtx.setProperty(NhttpConstants.HTTP_SC,
-                        Integer.parseInt(cachedResponse.getStatusCode()));
-            }
-            if (cachedResponse.getStatusReason() != null) {
-                msgCtx.setProperty(PassThroughConstants.HTTP_SC_DESC, cachedResponse.getStatusReason());
-            }
-            if (cachedResponse.isAddAgeHeaderEnabled()) {
-                setAgeHeader(cachedResponse, msgCtx);
-            }
+        if (cachedResponse.getStatusCode() != null) {
+            msgCtx.setProperty(NhttpConstants.HTTP_SC,
+                    Integer.parseInt(cachedResponse.getStatusCode()));
+        }
+        if (cachedResponse.getStatusReason() != null) {
+            msgCtx.setProperty(PassThroughConstants.HTTP_SC_DESC, cachedResponse.getStatusReason());
+        }
+        if (cachedResponse.isAddAgeHeaderEnabled()) {
+            setAgeHeader(cachedResponse, msgCtx);
         }
 
         if (msgCtx.isDoingREST()) {
@@ -343,44 +330,37 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         }
 
         CachableResponse response = new CachableResponse();
-        String httpMethod = (String) msgCtx.getProperty(Constants.Configuration.HTTP_METHOD);
-        response.setHttpMethod(httpMethod);
-        response.setProtocolType(protocolType);
         response.setResponseCodePattern(responseCodes);
         response.setMaxMessageSize(maxMessageSize);
-        response.setCacheControlEnabled(cacheControlEnabled);
         response.setAddAgeHeaderEnabled(addAgeHeaderEnabled);
 
         boolean toCache = true;
 
-        if (SemanticCacheConstants.HTTP_PROTOCOL_TYPE.equals(response.getProtocolType())) {
-            Object httpStatus = msgCtx.getProperty(NhttpConstants.HTTP_SC);
-            String statusCode = null;
+        Object httpStatus = msgCtx.getProperty(NhttpConstants.HTTP_SC);
+        String statusCode = null;
 
-            if (response.isCacheControlEnabled() && isNoStore(msgCtx)) {
-                response.clean();
+        if (isNoStore(msgCtx)) {
+            return;
+        }
+
+        if (httpStatus instanceof String) {
+            statusCode = ((String) httpStatus).trim();
+        } else if (httpStatus != null) {
+            statusCode = String.valueOf(httpStatus);
+        }
+
+        if (statusCode != null) {
+            if (statusCode.equals(SC_NOT_MODIFIED)) {
+                replaceEnvelopeWithCachedResponse(messageContext, msgCtx, response);
                 return;
             }
 
-            if (httpStatus instanceof String) {
-                statusCode = ((String) httpStatus).trim();
-            } else if (httpStatus != null) {
-                statusCode = String.valueOf(httpStatus);
-            }
-
-            if (statusCode != null) {
-                if (statusCode.equals(SC_NOT_MODIFIED)) {
-                    replaceEnvelopeWithCachedResponse(messageContext, msgCtx, response);
-                    return;
-                }
-
-                Matcher m = response.getResponseCodePattern().matcher(statusCode);
-                if (m.matches()) {
-                    response.setStatusCode(statusCode);
-                    response.setStatusReason((String) msgCtx.getProperty(PassThroughConstants.HTTP_SC_DESC));
-                } else {
-                    toCache = false;
-                }
+            Matcher m = response.getResponseCodePattern().matcher(statusCode);
+            if (m.matches()) {
+                response.setStatusCode(statusCode);
+                response.setStatusReason((String) msgCtx.getProperty(PassThroughConstants.HTTP_SC_DESC));
+            } else {
+                toCache = false;
             }
         }
 
@@ -392,7 +372,6 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
                     return;
                 }
                 response.setResponsePayload(responsePayload);
-                response.setJson(true);
             }
 
             Map<String, String> headers = (Map<String, String>) msgCtx.getProperty(
@@ -400,7 +379,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
             String messageType = (String) msgCtx.getProperty(Constants.Configuration.MESSAGE_TYPE);
             Map<String, Object> headerProperties = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-            if (response.isCacheControlEnabled() || response.isAddAgeHeaderEnabled()) {
+            if (response.isAddAgeHeaderEnabled()) {
                 try {
                     setResponseCachedTime(headers, response);
                 } catch (ParseException e) {
@@ -413,7 +392,6 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
                 headerProperties.putAll(headers);
             }
             headerProperties.put(Constants.Configuration.MESSAGE_TYPE, messageType);
-            headerProperties.put(SemanticCacheConstants.CACHE_KEY, response.getRequestHash());
             response.setHeaderProperties(headerProperties);
             msgCtx.setProperty(org.apache.axis2.context.MessageContext.TRANSPORT_HEADERS, headerProperties);
 
@@ -426,8 +404,6 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
                 logger.error("Error storing response in vector database.", e);
                 throw new RuntimeException("Failed to store response in cache", e);
             }
-        } else {
-            response.clean();
         }
     }
 
@@ -480,11 +456,11 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
                 && cacheControlHeaderValue.contains(SemanticCacheConstants.NO_STORE_STRING);
     }
 
-    public int getThreshold() {
+    public String getThreshold() {
         return threshold;
     }
 
-    public void setThreshold(int threshold) {
+    public void setThreshold(String threshold) {
         this.threshold = threshold;
     }
 
