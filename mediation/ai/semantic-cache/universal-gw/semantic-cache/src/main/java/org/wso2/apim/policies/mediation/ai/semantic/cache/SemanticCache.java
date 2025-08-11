@@ -68,12 +68,6 @@ import java.util.regex.Matcher;
 public class SemanticCache extends AbstractMediator implements ManagedLifecycle {
     private static final Log logger = LogFactory.getLog(SemanticCache.class);
 
-    private String responseCodes = SemanticCacheConstants.ANY_RESPONSE_CODE;
-    private int maxMessageSize = SemanticCacheConstants.DEFAULT_SIZE;
-    private boolean addAgeHeaderEnabled = SemanticCacheConstants.DEFAULT_ADD_AGE_HEADER;
-    private static final String CONTENT_TYPE = SemanticCacheConstants.CONTENT_TYPE;
-    private static final String SC_NOT_MODIFIED = SemanticCacheConstants.SC_NOT_MODIFIED;
-
     private String threshold = SemanticCacheConstants.DEFAULT_THRESHOLD;
     private String jsonPath;
 
@@ -285,7 +279,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
             msgCtx.setProperty(Constants.Configuration.MESSAGE_TYPE,
                     clonedMap.get(Constants.Configuration.MESSAGE_TYPE));
             msgCtx.setProperty(Constants.Configuration.CONTENT_TYPE,
-                    clonedMap.get(CONTENT_TYPE));
+                    clonedMap.get(SemanticCacheConstants.CONTENT_TYPE));
         }
 
         synCtx.setTo(null);
@@ -330,9 +324,9 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         }
 
         CachableResponse response = new CachableResponse();
-        response.setResponseCodePattern(responseCodes);
-        response.setMaxMessageSize(maxMessageSize);
-        response.setAddAgeHeaderEnabled(addAgeHeaderEnabled);
+        response.setResponseCodePattern(SemanticCacheConstants.RESPONSE_CODE_PATTERN);
+        response.setMaxMessageSize(SemanticCacheConstants.DEFAULT_SIZE);
+        response.setAddAgeHeaderEnabled(SemanticCacheConstants.DEFAULT_ADD_AGE_HEADER);
 
         boolean toCache = true;
 
@@ -350,11 +344,6 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         }
 
         if (statusCode != null) {
-            if (statusCode.equals(SC_NOT_MODIFIED)) {
-                replaceEnvelopeWithCachedResponse(messageContext, msgCtx, response);
-                return;
-            }
-
             Matcher m = response.getResponseCodePattern().matcher(statusCode);
             if (m.matches()) {
                 response.setStatusCode(statusCode);

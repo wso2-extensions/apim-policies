@@ -27,7 +27,7 @@ package org.wso2.apim.policies.mediation.ai.semantic.cache;
 public class SemanticCacheConstants {
 
     // Protocol and Response Configuration
-    public static final String ANY_RESPONSE_CODE = ".*";
+    public static final String RESPONSE_CODE_PATTERN = "^(200)$";;
     public static final int DEFAULT_SIZE = -1;
     public static final boolean DEFAULT_ADD_AGE_HEADER = false;
 
@@ -38,7 +38,6 @@ public class SemanticCacheConstants {
     
     // HTTP Headers and Status
     public static final String CONTENT_TYPE = "Content-Type";
-    public static final String SC_NOT_MODIFIED = "304";
     public static final String NO_STORE_STRING = "no-store";
     public static final String DATE_PATTERN = "EEE, dd MMM yyyy HH:mm:ss z";
     
