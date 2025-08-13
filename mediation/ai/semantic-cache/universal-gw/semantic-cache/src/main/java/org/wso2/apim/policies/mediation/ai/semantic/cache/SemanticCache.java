@@ -41,7 +41,7 @@ import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.EmbeddingProviderService;
 import org.wso2.carbon.apimgt.api.VectorDBProviderService;
 import org.wso2.apim.policies.mediation.ai.semantic.cache.internal.ServiceReferenceHolder;
-import org.wso2.carbon.apimgt.api.CachableResponse;
+import org.wso2.carbon.apimgt.api.CacheableResponse;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -186,7 +186,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         filter.put(SemanticCacheConstants.API_ID, apiId);
         filter.put(SemanticCacheConstants.THRESHOLD, threshold);
 
-        CachableResponse cachedResponse = vectorDBProvider.retrieve(embeddings, filter);
+        CacheableResponse cachedResponse = vectorDBProvider.retrieve(embeddings, filter);
         if (cachedResponse != null && cachedResponse.getResponsePayload() != null) {
             messageContext.setResponse(true);
             replaceEnvelopeWithCachedResponse(messageContext, msgCtx, cachedResponse);
@@ -242,7 +242,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
      */
     private void replaceEnvelopeWithCachedResponse(MessageContext synCtx,
                                                    org.apache.axis2.context.MessageContext msgCtx,
-                                                   CachableResponse cachedResponse) {
+                                                   CacheableResponse cachedResponse) {
         try {
             byte[] payload = cachedResponse.getResponsePayload();
             OMElement response = JsonUtil.getNewJsonPayload(msgCtx, payload, 0,
@@ -295,7 +295,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
      * @param cachedResponse The cached response containing the original fetch time.
      * @param msgCtx The Axis2 message context to set the header on.
      */
-    public void setAgeHeader(CachableResponse cachedResponse,
+    public void setAgeHeader(CacheableResponse cachedResponse,
                              org.apache.axis2.context.MessageContext msgCtx) {
         MultiValueMap excessHeaders = new MultiValueMap();
         long responseCachedTime = cachedResponse.getResponseFetchedTime();
@@ -323,7 +323,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
             return;
         }
 
-        CachableResponse response = new CachableResponse();
+        CacheableResponse response = new CacheableResponse();
         response.setResponseCodePattern(SemanticCacheConstants.RESPONSE_CODE_PATTERN);
         response.setMaxMessageSize(SemanticCacheConstants.DEFAULT_SIZE);
         response.setAddAgeHeaderEnabled(SemanticCacheConstants.DEFAULT_ADD_AGE_HEADER);
@@ -407,7 +407,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
      * @throws ParseException If the Date header cannot be parsed.
      * @throws java.text.ParseException If date parsing fails.
      */
-    public void setResponseCachedTime(Map<String, String> headers, CachableResponse response)
+    public void setResponseCachedTime(Map<String, String> headers, CacheableResponse response)
             throws ParseException, java.text.ParseException {
         long responseFetchedTime;
         String dateHeaderValue;
