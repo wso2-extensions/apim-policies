@@ -18,6 +18,7 @@
 
 package org.wso2.apim.policies.mediation.ai.semantic.cache;
 
+import com.google.gson.Gson;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.axiom.om.OMElement;
 import org.apache.axis2.AxisFault;
@@ -27,7 +28,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpHeaders;
-import org.apache.http.ParseException;
 import org.apache.synapse.ManagedLifecycle;
 import org.apache.synapse.MessageContext;
 import org.apache.synapse.commons.json.JsonUtil;
@@ -41,14 +41,12 @@ import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.EmbeddingProviderService;
 import org.wso2.carbon.apimgt.api.VectorDBProviderService;
 import org.wso2.apim.policies.mediation.ai.semantic.cache.internal.ServiceReferenceHolder;
-import org.wso2.carbon.apimgt.api.CacheableResponse;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Semantic Cache mediator.
@@ -73,6 +71,8 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
 
     private VectorDBProviderService vectorDBProvider;
     private EmbeddingProviderService embeddingProvider;
+
+    private final Gson gson = new Gson();
 
     /**
      * Initializes the SemanticCache mediator.
@@ -186,7 +186,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         filter.put(SemanticCacheConstants.API_ID, apiId);
         filter.put(SemanticCacheConstants.THRESHOLD, threshold);
 
-        CacheableResponse cachedResponse = vectorDBProvider.retrieve(embeddings, filter);
+        CacheableResponse cachedResponse = gson.fromJson((String) vectorDBProvider.retrieve(embeddings, filter), CacheableResponse.class);
         if (cachedResponse != null && cachedResponse.getResponsePayload() != null) {
             messageContext.setResponse(true);
             replaceEnvelopeWithCachedResponse(messageContext, msgCtx, cachedResponse);
@@ -263,8 +263,8 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         if (cachedResponse.getStatusReason() != null) {
             msgCtx.setProperty(PassThroughConstants.HTTP_SC_DESC, cachedResponse.getStatusReason());
         }
-        if (cachedResponse.isAddAgeHeaderEnabled()) {
-            setAgeHeader(cachedResponse, msgCtx);
+        if (SemanticCacheConstants.DEFAULT_ADD_AGE_HEADER) {
+            setAgeHeader(msgCtx);
         }
 
         if (msgCtx.isDoingREST()) {
@@ -292,13 +292,11 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
      * Calculates the time elapsed since the response was cached and adds an Age header
      * to inform clients about the freshness of the cached content.
      *
-     * @param cachedResponse The cached response containing the original fetch time.
      * @param msgCtx The Axis2 message context to set the header on.
      */
-    public void setAgeHeader(CacheableResponse cachedResponse,
-                             org.apache.axis2.context.MessageContext msgCtx) {
+    public void setAgeHeader(org.apache.axis2.context.MessageContext msgCtx) {
         MultiValueMap excessHeaders = new MultiValueMap();
-        long responseCachedTime = cachedResponse.getResponseFetchedTime();
+        long responseCachedTime = System.currentTimeMillis();
         long age = Math.abs((System.currentTimeMillis() - responseCachedTime) / 1000);
         excessHeaders.put(HttpHeaders.AGE, String.valueOf(age));
         msgCtx.setProperty(NhttpConstants.EXCESS_TRANSPORT_HEADERS, excessHeaders);
@@ -324,9 +322,6 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         }
 
         CacheableResponse response = new CacheableResponse();
-        response.setResponseCodePattern(SemanticCacheConstants.RESPONSE_CODE_PATTERN);
-        response.setMaxMessageSize(SemanticCacheConstants.DEFAULT_SIZE);
-        response.setAddAgeHeaderEnabled(SemanticCacheConstants.DEFAULT_ADD_AGE_HEADER);
 
         boolean toCache = true;
 
@@ -344,7 +339,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         }
 
         if (statusCode != null) {
-            Matcher m = response.getResponseCodePattern().matcher(statusCode);
+            Matcher m = Pattern.compile(SemanticCacheConstants.RESPONSE_CODE_PATTERN).matcher(statusCode);
             if (m.matches()) {
                 response.setStatusCode(statusCode);
                 response.setStatusReason((String) msgCtx.getProperty(PassThroughConstants.HTTP_SC_DESC));
@@ -356,8 +351,8 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         if (toCache) {
             if (JsonUtil.hasAJsonPayload(msgCtx)) {
                 byte[] responsePayload = JsonUtil.jsonPayloadToByteArray(msgCtx);
-                if (response.getMaxMessageSize() > -1 &&
-                        responsePayload.length > response.getMaxMessageSize()) {
+                if (SemanticCacheConstants.DEFAULT_SIZE > -1 &&
+                        responsePayload.length > SemanticCacheConstants.DEFAULT_SIZE) {
                     return;
                 }
                 response.setResponsePayload(responsePayload);
@@ -367,15 +362,6 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
                     org.apache.axis2.context.MessageContext.TRANSPORT_HEADERS);
             String messageType = (String) msgCtx.getProperty(Constants.Configuration.MESSAGE_TYPE);
             Map<String, Object> headerProperties = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-
-            if (response.isAddAgeHeaderEnabled()) {
-                try {
-                    setResponseCachedTime(headers, response);
-                } catch (ParseException e) {
-                    logger.warn("Failed to parse response date header, using current time", e);
-                    response.setResponseFetchedTime(System.currentTimeMillis());
-                }
-            }
 
             if (headers != null) {
                 headerProperties.putAll(headers);
@@ -394,33 +380,6 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
                 throw new RuntimeException("Failed to store response in cache", e);
             }
         }
-    }
-
-    /**
-     * Sets the response cached timestamp based on the Date header or current time.
-     * <p>
-     * Parses the Date header from the response to determine when the response was generated,
-     * or falls back to the current system time if no Date header is present.
-     *
-     * @param headers The response headers map.
-     * @param response The cachable response object to set timestamp on.
-     * @throws ParseException If the Date header cannot be parsed.
-     * @throws java.text.ParseException If date parsing fails.
-     */
-    public void setResponseCachedTime(Map<String, String> headers, CacheableResponse response)
-            throws ParseException, java.text.ParseException {
-        long responseFetchedTime;
-        String dateHeaderValue;
-
-        if (headers != null && (dateHeaderValue = headers.get(HttpHeaders.DATE)) != null) {
-            SimpleDateFormat format = new SimpleDateFormat(SemanticCacheConstants.DATE_PATTERN);
-            Date d = format.parse(dateHeaderValue);
-            responseFetchedTime = d.getTime();
-        } else {
-            responseFetchedTime = System.currentTimeMillis();
-        }
-
-        response.setResponseFetchedTime(responseFetchedTime);
     }
 
     /**
