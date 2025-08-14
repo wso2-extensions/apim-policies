@@ -35,7 +35,7 @@ Follow these steps to integrate the Semantic Cache policy into your WSO2 API Man
 1. **Copy the Mediator JAR**
 
 ```bash
-cp target/org.wso2.apim.policies.mediation.ai.semantic-cache-<version>.jar \
+cp target/org.wso2.am.policies.mediation.ai.semantic-cache-<version>.jar \
    $APIM_HOME/repository/components/dropins/
 ```
 
