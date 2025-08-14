@@ -59,7 +59,7 @@
         <json.orbit.version>3.0.0.wso2v6</json.orbit.version>
         <import.package.version.commons.logging>[1.2.0,2.0.0)</import.package.version.commons.logging>
         <axis2.osgi.version.range>[1.6.1, 1.7.0)</axis2.osgi.version.range>
-        <carbon.apimgt.version>9.31.167-SNAPSHOT</carbon.apimgt.version>
+        <carbon.apimgt.version>9.32.15</carbon.apimgt.version>
     </properties>
 
     <dependencies>
