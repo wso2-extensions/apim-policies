@@ -27,9 +27,7 @@ package org.wso2.apim.policies.mediation.ai.semantic.cache;
 public class SemanticCacheConstants {
 
     // Protocol and Response Configuration
-    public static final String RESPONSE_CODE_PATTERN = "^(200)$";;
-    public static final int DEFAULT_SIZE = -1;
-    public static final boolean DEFAULT_ADD_AGE_HEADER = false;
+    public static final String STATUS_CODE_OK = "200";
 
     // Cache Configuration
     public static final String DEFAULT_THRESHOLD = "80";

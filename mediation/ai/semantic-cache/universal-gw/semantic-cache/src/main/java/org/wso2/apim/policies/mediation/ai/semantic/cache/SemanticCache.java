@@ -186,7 +186,14 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         filter.put(SemanticCacheConstants.API_ID, apiId);
         filter.put(SemanticCacheConstants.THRESHOLD, threshold);
 
-        CacheableResponse cachedResponse = gson.fromJson((String) vectorDBProvider.retrieve(embeddings, filter), CacheableResponse.class);
+        String retrievedResponse = vectorDBProvider.retrieve(embeddings, filter);
+        if (retrievedResponse == null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("No cached response found for the request embeddings.");
+            }
+            return true; // No cache hit, continue processing
+        }
+        CacheableResponse cachedResponse = gson.fromJson(retrievedResponse, CacheableResponse.class);
         if (cachedResponse != null && cachedResponse.getResponsePayload() != null) {
             messageContext.setResponse(true);
             replaceEnvelopeWithCachedResponse(messageContext, msgCtx, cachedResponse);
@@ -263,9 +270,6 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         if (cachedResponse.getStatusReason() != null) {
             msgCtx.setProperty(PassThroughConstants.HTTP_SC_DESC, cachedResponse.getStatusReason());
         }
-        if (SemanticCacheConstants.DEFAULT_ADD_AGE_HEADER) {
-            setAgeHeader(msgCtx);
-        }
 
         if (msgCtx.isDoingREST()) {
             msgCtx.removeProperty(PassThroughConstants.NO_ENTITY_BODY);
@@ -287,22 +291,6 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
     }
 
     /**
-     * Sets the Age header for cached responses to indicate cache staleness.
-     * <p>
-     * Calculates the time elapsed since the response was cached and adds an Age header
-     * to inform clients about the freshness of the cached content.
-     *
-     * @param msgCtx The Axis2 message context to set the header on.
-     */
-    public void setAgeHeader(org.apache.axis2.context.MessageContext msgCtx) {
-        MultiValueMap excessHeaders = new MultiValueMap();
-        long responseCachedTime = System.currentTimeMillis();
-        long age = Math.abs((System.currentTimeMillis() - responseCachedTime) / 1000);
-        excessHeaders.put(HttpHeaders.AGE, String.valueOf(age));
-        msgCtx.setProperty(NhttpConstants.EXCESS_TRANSPORT_HEADERS, excessHeaders);
-    }
-
-    /**
      * Processes outgoing response messages for caching.
      * <p>
      * Retrieves the request embeddings stored during request processing and caches the response
@@ -316,21 +304,30 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         org.apache.axis2.context.MessageContext msgCtx =
                 ((Axis2MessageContext) messageContext).getAxis2MessageContext();
 
-        double[] embeddings = (double[]) messageContext.getProperty(SemanticCacheConstants.REQUEST_EMBEDDINGS);
+        if (isNoStore(msgCtx)) {
+            return;
+        }
+
+        Object embeddingObject = messageContext.getProperty(SemanticCacheConstants.REQUEST_EMBEDDINGS);
+
+        if (embeddingObject == null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("No request embeddings found in message context - skipping response caching.");
+            }
+            return; // No embeddings to cache response against
+        }
+
+        double[] embeddings = (double[]) embeddingObject;
         if (embeddings == null) {
             return;
         }
 
         CacheableResponse response = new CacheableResponse();
 
-        boolean toCache = true;
+        boolean cacheResponse = true;
 
         Object httpStatus = msgCtx.getProperty(NhttpConstants.HTTP_SC);
         String statusCode = null;
-
-        if (isNoStore(msgCtx)) {
-            return;
-        }
 
         if (httpStatus instanceof String) {
             statusCode = ((String) httpStatus).trim();
@@ -339,22 +336,17 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         }
 
         if (statusCode != null) {
-            Matcher m = Pattern.compile(SemanticCacheConstants.RESPONSE_CODE_PATTERN).matcher(statusCode);
-            if (m.matches()) {
+            if (statusCode.equals(SemanticCacheConstants.STATUS_CODE_OK)) {
                 response.setStatusCode(statusCode);
                 response.setStatusReason((String) msgCtx.getProperty(PassThroughConstants.HTTP_SC_DESC));
             } else {
-                toCache = false;
+                cacheResponse = false;
             }
         }
 
-        if (toCache) {
+        if (cacheResponse) {
             if (JsonUtil.hasAJsonPayload(msgCtx)) {
                 byte[] responsePayload = JsonUtil.jsonPayloadToByteArray(msgCtx);
-                if (SemanticCacheConstants.DEFAULT_SIZE > -1 &&
-                        responsePayload.length > SemanticCacheConstants.DEFAULT_SIZE) {
-                    return;
-                }
                 response.setResponsePayload(responsePayload);
             }
 
