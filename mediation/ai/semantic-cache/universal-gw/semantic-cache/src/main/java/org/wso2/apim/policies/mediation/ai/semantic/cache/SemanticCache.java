@@ -187,13 +187,10 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         filter.put(SemanticCacheConstants.THRESHOLD, threshold);
 
         String retrievedResponse = vectorDBProvider.retrieve(embeddings, filter);
-        if (retrievedResponse == null) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("No cached response found for the request embeddings.");
-            }
-            return true; // No cache hit, continue processing
+        CacheableResponse cachedResponse = null;
+        if (retrievedResponse != null) {
+            cachedResponse = gson.fromJson(retrievedResponse, CacheableResponse.class);
         }
-        CacheableResponse cachedResponse = gson.fromJson(retrievedResponse, CacheableResponse.class);
         if (cachedResponse != null && cachedResponse.getResponsePayload() != null) {
             messageContext.setResponse(true);
             replaceEnvelopeWithCachedResponse(messageContext, msgCtx, cachedResponse);
