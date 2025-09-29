@@ -367,7 +367,17 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         if (hateCategory == null || hateCategory.isEmpty()) {
             return;
         }
-        this.hateCategory = Integer.parseInt(hateCategory);
+        try {
+            int value = Integer.parseInt(hateCategory);
+            if (value < 0 || value > 7) {
+                throw new IllegalArgumentException("Invalid hateCategory value: '" + hateCategory +
+                    "'. Category severity levels must be between 0 and 7.");
+            }
+            this.hateCategory = value;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid hateCategory value: '" + hateCategory +
+                "'. Expected a numeric value between 0 and 7.", e);
+        }
     }
 
     public int getSexualCategory() {
@@ -380,7 +390,17 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         if (sexualCategory == null || sexualCategory.isEmpty()) {
             return;
         }
-        this.sexualCategory = Integer.parseInt(sexualCategory);
+        try {
+            int value = Integer.parseInt(sexualCategory);
+            if (value < 0 || value > 7) {
+                throw new IllegalArgumentException("Invalid sexualCategory value: '" + sexualCategory +
+                    "'. Category severity levels must be between 0 and 7.");
+            }
+            this.sexualCategory = value;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid sexualCategory value: '" + sexualCategory +
+                "'. Expected a numeric value between 0 and 7.", e);
+        }
     }
 
     public int getSelfHarmCategory() {
@@ -393,7 +413,17 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         if (selfHarmCategory == null || selfHarmCategory.isEmpty()) {
             return;
         }
-        this.selfHarmCategory = Integer.parseInt(selfHarmCategory);
+        try {
+            int value = Integer.parseInt(selfHarmCategory);
+            if (value < 0 || value > 7) {
+                throw new IllegalArgumentException("Invalid selfHarmCategory value: '" + selfHarmCategory +
+                    "'. Category severity levels must be between 0 and 7.");
+            }
+            this.selfHarmCategory = value;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid selfHarmCategory value: '" + selfHarmCategory +
+                "'. Expected a numeric value between 0 and 7.", e);
+        }
     }
 
     public int getViolenceCategory() {
@@ -406,7 +436,17 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         if (violenceCategory == null || violenceCategory.isEmpty()) {
             return;
         }
-        this.violenceCategory = Integer.parseInt(violenceCategory);
+        try {
+            int value = Integer.parseInt(violenceCategory);
+            if (value < 0 || value > 7) {
+                throw new IllegalArgumentException("Invalid violenceCategory value: '" + violenceCategory +
+                    "'. Category severity levels must be between 0 and 7.");
+            }
+            this.violenceCategory = value;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid violenceCategory value: '" + violenceCategory +
+                "'. Expected a numeric value between 0 and 7.", e);
+        }
     }
 
     public String getJsonPath() {
