@@ -362,9 +362,12 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         return hateCategory;
     }
 
-    public void setHateCategory(int hateCategory) {
+    public void setHateCategory(String hateCategory) {
 
-        this.hateCategory = hateCategory;
+        if (hateCategory == null || hateCategory.isEmpty()) {
+            return;
+        }
+        this.hateCategory = Integer.parseInt(hateCategory);
     }
 
     public int getSexualCategory() {
@@ -372,9 +375,12 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         return sexualCategory;
     }
 
-    public void setSexualCategory(int sexualCategory) {
+    public void setSexualCategory(String sexualCategory) {
 
-        this.sexualCategory = sexualCategory;
+        if (sexualCategory == null || sexualCategory.isEmpty()) {
+            return;
+        }
+        this.sexualCategory = Integer.parseInt(sexualCategory);
     }
 
     public int getSelfHarmCategory() {
@@ -382,9 +388,12 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         return selfHarmCategory;
     }
 
-    public void setSelfHarmCategory(int selfHarmCategory) {
+    public void setSelfHarmCategory(String selfHarmCategory) {
 
-        this.selfHarmCategory = selfHarmCategory;
+        if (selfHarmCategory == null || selfHarmCategory.isEmpty()) {
+            return;
+        }
+        this.selfHarmCategory = Integer.parseInt(selfHarmCategory);
     }
 
     public int getViolenceCategory() {
@@ -392,9 +401,12 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         return violenceCategory;
     }
 
-    public void setViolenceCategory(int violenceCategory) {
+    public void setViolenceCategory(String violenceCategory) {
 
-        this.violenceCategory = violenceCategory;
+        if (violenceCategory == null || violenceCategory.isEmpty()) {
+            return;
+        }
+        this.violenceCategory = Integer.parseInt(violenceCategory);
     }
 
     public String getJsonPath() {
