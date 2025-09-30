@@ -362,9 +362,22 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         return hateCategory;
     }
 
-    public void setHateCategory(int hateCategory) {
+    public void setHateCategory(String hateCategory) {
 
-        this.hateCategory = hateCategory;
+        if (hateCategory == null || hateCategory.isEmpty()) {
+            return;
+        }
+        try {
+            int value = Integer.parseInt(hateCategory);
+            if (value < 0 || value > 7) {
+                throw new IllegalArgumentException("Invalid hateCategory value: '" + hateCategory +
+                    "'. Category severity levels must be between 0 and 7.");
+            }
+            this.hateCategory = value;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid hateCategory value: '" + hateCategory +
+                "'. Expected a numeric value between 0 and 7.", e);
+        }
     }
 
     public int getSexualCategory() {
@@ -372,9 +385,22 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         return sexualCategory;
     }
 
-    public void setSexualCategory(int sexualCategory) {
+    public void setSexualCategory(String sexualCategory) {
 
-        this.sexualCategory = sexualCategory;
+        if (sexualCategory == null || sexualCategory.isEmpty()) {
+            return;
+        }
+        try {
+            int value = Integer.parseInt(sexualCategory);
+            if (value < 0 || value > 7) {
+                throw new IllegalArgumentException("Invalid sexualCategory value: '" + sexualCategory +
+                    "'. Category severity levels must be between 0 and 7.");
+            }
+            this.sexualCategory = value;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid sexualCategory value: '" + sexualCategory +
+                "'. Expected a numeric value between 0 and 7.", e);
+        }
     }
 
     public int getSelfHarmCategory() {
@@ -382,9 +408,22 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         return selfHarmCategory;
     }
 
-    public void setSelfHarmCategory(int selfHarmCategory) {
+    public void setSelfHarmCategory(String selfHarmCategory) {
 
-        this.selfHarmCategory = selfHarmCategory;
+        if (selfHarmCategory == null || selfHarmCategory.isEmpty()) {
+            return;
+        }
+        try {
+            int value = Integer.parseInt(selfHarmCategory);
+            if (value < 0 || value > 7) {
+                throw new IllegalArgumentException("Invalid selfHarmCategory value: '" + selfHarmCategory +
+                    "'. Category severity levels must be between 0 and 7.");
+            }
+            this.selfHarmCategory = value;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid selfHarmCategory value: '" + selfHarmCategory +
+                "'. Expected a numeric value between 0 and 7.", e);
+        }
     }
 
     public int getViolenceCategory() {
@@ -392,9 +431,22 @@ public class AzureContentSafetyContentModeration extends AbstractMediator implem
         return violenceCategory;
     }
 
-    public void setViolenceCategory(int violenceCategory) {
+    public void setViolenceCategory(String violenceCategory) {
 
-        this.violenceCategory = violenceCategory;
+        if (violenceCategory == null || violenceCategory.isEmpty()) {
+            return;
+        }
+        try {
+            int value = Integer.parseInt(violenceCategory);
+            if (value < 0 || value > 7) {
+                throw new IllegalArgumentException("Invalid violenceCategory value: '" + violenceCategory +
+                    "'. Category severity levels must be between 0 and 7.");
+            }
+            this.violenceCategory = value;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid violenceCategory value: '" + violenceCategory +
+                "'. Expected a numeric value between 0 and 7.", e);
+        }
     }
 
     public String getJsonPath() {
