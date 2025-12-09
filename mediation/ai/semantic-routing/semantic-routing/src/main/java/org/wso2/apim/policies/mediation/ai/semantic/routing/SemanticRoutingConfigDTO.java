@@ -18,38 +18,64 @@
 
 package org.wso2.apim.policies.mediation.ai.semantic.routing;
 
-import com.google.gson.*;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.reflect.TypeToken;
 import org.wso2.carbon.apimgt.api.gateway.ModelEndpointDTO;
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class SemanticRoutingConfigDTO {
 
     private List<RouteConfig> production;
     
-    @SerializedName("sandbox")
-    private Object sandboxRaw; // Can be either object or array
+    private List<RouteConfig> sandbox;
     
-    private transient List<RouteConfig> sandbox;
+    @SerializedName("Path")
+    private PathConfig Path;
     
     @SerializedName("Default")
-    private List<RouteConfig> defaultRoute;
+    private DefaultConfig Default;
+    
+    public static class PathConfig {
+        private String contentpath;
+        
+        public String getContentpath() {
+            return contentpath;
+        }
+        
+        public void setContentpath(String contentpath) {
+            this.contentpath = contentpath;
+        }
+    }
+    
+    public static class DefaultConfig {
+        private String model;
+        private String endpointId;
+        
+        public String getModel() {
+            return model;
+        }
+        
+        public void setModel(String model) {
+            this.model = model;
+        }
+        
+        public String getEndpointId() {
+            return endpointId;
+        }
+        
+        public void setEndpointId(String endpointId) {
+            this.endpointId = endpointId;
+        }
+    }
 
     public static class RouteConfig {
         private String model;
         
-        @SerializedName("endpointId")
         private String endpointId;
         
         private List<String> utterances;
         
-        @SerializedName("scorethreshold")
-        private String scoreThresholdStr;
+        private String scorethreshold;
         
         // Transient fields for runtime use
         private transient ModelEndpointDTO endpoint;
@@ -73,12 +99,12 @@ public class SemanticRoutingConfigDTO {
             this.utterances = utterances;
         }
 
-        public String getScoreThresholdStr() {
-            return scoreThresholdStr;
+        public String getScorethreshold() {
+            return scorethreshold;
         }
 
-        public void setScoreThresholdStr(String scoreThresholdStr) {
-            this.scoreThresholdStr = scoreThresholdStr;
+        public void setScorethreshold(String scorethreshold) {
+            this.scorethreshold = scorethreshold;
             // Threshold parsing and validation handled in SemanticRouting.initializeRouteConfig()
             // No default threshold - user must provide valid value or route uses Default fallback
         }
@@ -130,19 +156,6 @@ public class SemanticRoutingConfigDTO {
     }
 
     public List<RouteConfig> getSandbox() {
-        if (sandbox == null && sandboxRaw != null) {
-            // Parse sandboxRaw on first access
-            Gson gson = new Gson();
-            if (sandboxRaw instanceof JsonObject) {
-                // Single object - convert to list
-                RouteConfig config = gson.fromJson((JsonObject) sandboxRaw, RouteConfig.class);
-                sandbox = Collections.singletonList(config);
-            } else if (sandboxRaw instanceof JsonArray) {
-                // Array of objects
-                Type listType = new TypeToken<List<RouteConfig>>(){}.getType();
-                sandbox = gson.fromJson((JsonArray) sandboxRaw, listType);
-            }
-        }
         return sandbox;
     }
 
@@ -150,11 +163,19 @@ public class SemanticRoutingConfigDTO {
         this.sandbox = sandbox;
     }
     
-    public List<RouteConfig> getDefaultRoute() {
-        return defaultRoute;
+    public DefaultConfig getDefault() {
+        return Default;
     }
     
-    public void setDefaultRoute(List<RouteConfig> defaultRoute) {
-        this.defaultRoute = defaultRoute;
+    public void setDefault(DefaultConfig Default) {
+        this.Default = Default;
+    }
+    
+    public PathConfig getPath() {
+        return Path;
+    }
+    
+    public void setPath(PathConfig Path) {
+        this.Path = Path;
     }
 }

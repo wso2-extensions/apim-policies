@@ -21,6 +21,7 @@ package org.wso2.apim.policies.mediation.ai.semantic.routing;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.ManagedLifecycle;
@@ -29,6 +30,8 @@ import org.apache.synapse.commons.json.JsonUtil;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.mediators.AbstractMediator;
+import org.apache.synapse.transport.nhttp.NhttpConstants;
+import org.apache.synapse.transport.passthru.util.RelayUtils;
 import org.wso2.apim.policies.mediation.ai.semantic.routing.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.EmbeddingProviderService;
@@ -36,6 +39,10 @@ import org.wso2.carbon.apimgt.api.gateway.ModelEndpointDTO;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.api.APIConstants.AIAPIConstants;
 
+import javax.xml.stream.XMLStreamException;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -97,11 +104,9 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
             }
             
             // Initialize default route if provided
-            if (config.getDefaultRoute() != null && !config.getDefaultRoute().isEmpty()) {
-                for (SemanticRoutingConfigDTO.RouteConfig routeConfig : config.getDefaultRoute()) {
-                    initializeRouteConfig(routeConfig);
-                    // No need to precompute embeddings for default route as it has no utterances
-                }
+            if (config.getDefault() != null) {
+                // Default config only has model and endpointId, no need to initialize like RouteConfig
+                // Validation will happen during routing
             }
 
             if (logger.isDebugEnabled()) {
@@ -123,9 +128,9 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
         }
         
         // Parse scoreThreshold from user input (no default - user must provide or route goes to Default)
-        if (routeConfig.getScoreThresholdStr() != null && !routeConfig.getScoreThresholdStr().trim().isEmpty()) {
+        if (routeConfig.getScorethreshold() != null && !routeConfig.getScorethreshold().trim().isEmpty()) {
             try {
-                double threshold = Double.parseDouble(routeConfig.getScoreThresholdStr());
+                double threshold = Double.parseDouble(routeConfig.getScorethreshold());
                 if (threshold < 0.0 || threshold > 1.0) {
                     logger.warn("Score threshold out of range [0.0-1.0]: " + threshold + 
                                " for model: " + routeConfig.getModel() + ". Route will use Default fallback.");
@@ -134,7 +139,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
                     routeConfig.setScoreThreshold(threshold);
                 }
             } catch (NumberFormatException e) {
-                logger.warn("Invalid score threshold format: " + routeConfig.getScoreThresholdStr() + 
+                logger.warn("Invalid score threshold format: " + routeConfig.getScorethreshold() + 
                            " for model: " + routeConfig.getModel() + ". Route will use Default fallback.");
                 routeConfig.setScoreThreshold(-1.0); // Invalid - will always fail threshold check
             }
@@ -288,6 +293,9 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
                     configs.put(AIAPIConstants.TARGET_MODEL_ENDPOINT, targetEndpoint);
                     messageContext.setProperty(SemanticRoutingConstants.SEMANTIC_ROUTING_CONFIGS, configs);
 
+                    // Modify the request to use the selected model
+                    modifyRequestForSemanticRoute(messageContext, targetEndpoint);
+
                     if (logger.isDebugEnabled()) {
                         logger.debug("Routed to model: " + targetEndpoint.getModel() + ", endpoint: " + targetEndpoint.getEndpointId() + ", score: " + highestScore);
                     }
@@ -297,16 +305,22 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
                 }
             } else {
                 // No match found or score threshold not met, route to default
-                if (config.getDefaultRoute() != null && !config.getDefaultRoute().isEmpty()) {
-                    SemanticRoutingConfigDTO.RouteConfig defaultRoute = config.getDefaultRoute().get(0);
-                    ModelEndpointDTO defaultEndpoint = defaultRoute.getEndpoint();
+                if (config.getDefault() != null) {
+                    SemanticRoutingConfigDTO.DefaultConfig defaultConfig = config.getDefault();
                     
-                    if (defaultEndpoint != null) {
+                    if (defaultConfig.getModel() != null && defaultConfig.getEndpointId() != null) {
+                        ModelEndpointDTO defaultEndpoint = new ModelEndpointDTO();
+                        defaultEndpoint.setModel(defaultConfig.getModel());
+                        defaultEndpoint.setEndpointId(defaultConfig.getEndpointId());
+                        
                         messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, defaultEndpoint.getEndpointId());
                         
                         Map<String, Object> configs = new HashMap<>();
                         configs.put(AIAPIConstants.TARGET_MODEL_ENDPOINT, defaultEndpoint);
                         messageContext.setProperty(SemanticRoutingConstants.SEMANTIC_ROUTING_CONFIGS, configs);
+                        
+                        // Modify the request to use the default model
+                        modifyRequestForSemanticRoute(messageContext, defaultEndpoint);
                         
                         if (logger.isDebugEnabled()) {
                             logger.debug("No match found (highest score: " + highestScore + 
@@ -314,7 +328,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
                                        ", endpoint: " + defaultEndpoint.getEndpointId());
                         }
                     } else {
-                        logger.warn("Default endpoint is null, no routing applied");
+                        logger.warn("Default config is incomplete (missing model or endpointId), no routing applied");
                     }
                 } else {
                     if (logger.isDebugEnabled()) {
@@ -336,41 +350,47 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
         org.apache.axis2.context.MessageContext axis2MC =
                 ((Axis2MessageContext) messageContext).getAxis2MessageContext();
         String jsonPayload = JsonUtil.jsonPayloadToString(axis2MC);
-        
-        if (jsonPayload == null || jsonPayload.isEmpty()) {
-            return null;
-        }
-        
-        try {
-            Gson gson = new Gson();
-            JsonObject payload = gson.fromJson(jsonPayload, JsonObject.class);
-            
-            // Extract content from messages array
-            if (payload.has("messages") && payload.get("messages").isJsonArray()) {
-                JsonArray messages = payload.getAsJsonArray("messages");
-                
-                // Look for the last user message
-                for (int i = messages.size() - 1; i >= 0; i--) {
-                    JsonObject message = messages.get(i).getAsJsonObject();
-                    if (message.has("content")) {
-                        String content = message.get("content").getAsString();
-                        if (content != null && !content.isEmpty()) {
-                            if (logger.isDebugEnabled()) {
-                                logger.debug("Extracted user request: " + content);
+
+        if (jsonPayload == null || jsonPayload.isEmpty()) return null;
+
+        if (config.getPath() != null) {
+            String contentPath = config.getPath().getContentpath();
+            if (contentPath != null && !contentPath.trim().isEmpty()) {
+                try {
+                    Object result = JsonPath.read(jsonPayload, contentPath);
+                    
+                    if (result instanceof String) {
+                        return (String) result;
+                    } else if (result instanceof List) {
+                        List<?> resultList = (List<?>) result;
+                        if (!resultList.isEmpty()) {
+                            Object firstElement = resultList.get(0);
+                            if (firstElement instanceof String) {
+                                return (String) firstElement;
+                            } else if (firstElement instanceof Map) {
+                                // Handle nested objects - try to get text field
+                                Map<?, ?> map = (Map<?, ?>) firstElement;
+                                if (map.containsKey("text")) {
+                                    return String.valueOf(map.get("text"));
+                                }
                             }
-                            return content;
+                            // Fallback: convert to string
+                            return String.valueOf(firstElement);
                         }
+                    } else if (result != null) {
+                        // Handle any other type by converting to string
+                        return String.valueOf(result);
                     }
+                } catch (Exception e) {
+                    logger.error("Error parsing JSON path '" + contentPath + "': " + e.getMessage());
+                    messageContext.setProperty(SemanticRoutingConstants.EXTRACTION_ERROR,
+                        "Error parsing JSON path: " + e.getMessage());
+                    return null;
                 }
             }
-            
-            // Fallback: if no messages array, return the whole payload
-            return jsonPayload;
-            
-        } catch (Exception e) {
-            logger.warn("Failed to parse request JSON, using raw payload", e);
-            return jsonPayload;
         }
+        
+        return null;
     }
 
     /**
@@ -445,5 +465,140 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
 
     public void setRoutingConfig(String routingConfig) {
         this.semanticRoutingConfigs = routingConfig;
+    }
+
+    /**
+     * Modifies the request to use the model from the selected semantic route endpoint.
+     * Supports both JSON payload modification and URL path modification for all providers.
+     *
+     * @param messageContext The Synapse message context
+     * @param targetEndpoint The selected model endpoint from semantic routing
+     */
+    private void modifyRequestForSemanticRoute(MessageContext messageContext, ModelEndpointDTO targetEndpoint) {
+        try {
+            org.apache.axis2.context.MessageContext axis2Ctx =
+                    ((Axis2MessageContext) messageContext).getAxis2MessageContext();
+            
+            // First, try to modify JSON payload - most common case
+            String jsonPayload = JsonUtil.jsonPayloadToString(axis2Ctx);
+            if (jsonPayload != null && !jsonPayload.isEmpty()) {
+                RelayUtils.buildMessage(axis2Ctx);
+                
+                // Try common model paths in the payload
+                String modifiedPayload = null;
+                try {
+                    modifiedPayload = JsonPath.parse(jsonPayload)
+                            .set("$.model", targetEndpoint.getModel()).jsonString();
+                } catch (Exception e1) {
+                    try {
+                        modifiedPayload = JsonPath.parse(jsonPayload)
+                                .set("$.options.model", targetEndpoint.getModel()).jsonString();
+                    } catch (Exception e2) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Common model paths not found in payload");
+                        }
+                    }
+                }
+                
+                if (modifiedPayload != null) {
+                    JsonUtil.getNewJsonPayload(axis2Ctx, modifiedPayload, true, true);
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Modified request payload with model: " + targetEndpoint.getModel());
+                    }
+                    return;
+                }
+            }
+            
+            // If payload modification failed, try path modification
+            String requestPath = (String) axis2Ctx.getProperty(NhttpConstants.REST_URL_POSTFIX);
+            if (requestPath != null && !requestPath.isEmpty()) {
+                URI uri = URI.create(requestPath);
+                String rawPath = uri.getRawPath();
+                String rawQuery = uri.getRawQuery();
+                
+                // Encode the model name properly for URL path segments (handles special chars, colons, etc.)
+                String encodedModel = encodePathSegmentRFC3986(targetEndpoint.getModel());
+                
+                String modifiedPath = rawPath;
+                
+                // Handle multiple path patterns:
+                // 1. OpenAI/Mistral style: /v1/models/MODEL_NAME or /models/MODEL_NAME
+                if (rawPath.contains("/models/")) {
+                    modifiedPath = rawPath.replaceAll("/models/[^/]+", 
+                            "/models/" + java.util.regex.Matcher.quoteReplacement(encodedModel));
+                }
+                // 2. Amazon Bedrock style: /model/MODEL_NAME/action
+                else if (rawPath.contains("/model/")) {
+                    modifiedPath = rawPath.replaceAll("/model/[^/]+", 
+                            "/model/" + java.util.regex.Matcher.quoteReplacement(encodedModel));
+                }
+                // 3. Azure/Vertex AI style: /deployments/MODEL_NAME or /publishers/.../models/MODEL_NAME
+                else if (rawPath.contains("/deployments/")) {
+                    modifiedPath = rawPath.replaceAll("/deployments/[^/]+", 
+                            "/deployments/" + java.util.regex.Matcher.quoteReplacement(encodedModel));
+                }
+                
+                StringBuilder finalPath = new StringBuilder(modifiedPath);
+                if (rawQuery != null) {
+                    finalPath.append("?").append(rawQuery);
+                }
+                
+                axis2Ctx.setProperty(NhttpConstants.REST_URL_POSTFIX, finalPath.toString());
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Modified request path from: " + requestPath + " to: " + finalPath);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error modifying request for semantic route", e);
+        }
+    }
+
+    /**
+     * Encodes a path segment according to RFC 3986 standards.
+     * This handles special characters in model names like colons, dots, etc.
+     *
+     * @param segment The path segment to encode
+     * @return The encoded path segment
+     */
+    private String encodePathSegmentRFC3986(String segment) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Encoding path segment: " + segment);
+        }
+        StringBuilder out = new StringBuilder();
+        byte[] bytes = segment.getBytes(StandardCharsets.UTF_8);
+        for (byte b : bytes) {
+            char c = (char) (b & 0xFF);
+            if (isUnreserved(c) || isSubDelim(c) || c == ':' || c == '@') {
+                out.append(c);
+            } else {
+                out.append('%');
+                String hx = Integer.toHexString(b & 0xFF).toUpperCase();
+                if (hx.length() == 1) out.append('0');
+                out.append(hx);
+            }
+        }
+        return out.toString();
+    }
+
+    /**
+     * Checks if the given character is an unreserved character as per RFC 3986.
+     *
+     * @param c The character to check
+     * @return true if unreserved, false otherwise
+     */
+    private boolean isUnreserved(char c) {
+        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
+                || c == '-' || c == '.' || c == '_' || c == '~';
+    }
+
+    /**
+     * Checks if the given character is a sub-delimiter as per RFC 3986.
+     *
+     * @param c The character to check
+     * @return true if sub-delimiter, false otherwise
+     */
+    private boolean isSubDelim(char c) {
+        return c == '!' || c == '$' || c == '&' || c == '\'' || c == '(' || c == ')'
+                || c == '*' || c == '+' || c == ',' || c == ';' || c == '=';
     }
 }
