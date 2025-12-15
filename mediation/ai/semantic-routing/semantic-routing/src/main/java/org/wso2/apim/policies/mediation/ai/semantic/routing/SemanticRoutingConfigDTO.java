@@ -80,8 +80,7 @@ public class SemanticRoutingConfigDTO {
         // Transient fields for runtime use
         private transient ModelEndpointDTO endpoint;
         private transient double scoreThreshold;
-        private transient double[][] centroids; // Multi-centroid embeddings (K sub-centroids)
-        private transient int numCentroids; // Number of sub-centroids for this route
+        private transient double[][] utteranceEmbeddings;
 
         public ModelEndpointDTO getEndpoint() {
             return endpoint;
@@ -117,17 +116,12 @@ public class SemanticRoutingConfigDTO {
             this.scoreThreshold = scoreThreshold;
         }
 
-        public double[][] getCentroids() {
-            return centroids;
+        public double[][] getUtteranceEmbeddings() {
+            return utteranceEmbeddings;
         }
 
-        public void setCentroids(double[][] centroids) {
-            this.centroids = centroids;
-            this.numCentroids = (centroids != null) ? centroids.length : 0;
-        }
-        
-        public int getNumCentroids() {
-            return numCentroids;
+        public void setUtteranceEmbeddings(double[][] utteranceEmbeddings) {
+            this.utteranceEmbeddings = utteranceEmbeddings;
         }
 
         public String getModel() {

@@ -21,5 +21,4 @@ package org.wso2.apim.policies.mediation.ai.semantic.routing;
 public class SemanticRoutingConstants {
 
     public static final String SEMANTIC_ROUTING_CONFIGS = "SEMANTIC_ROUTING_CONFIGS";
-    public static final String EXTRACTION_ERROR = "SEMANTIC_ROUTING_EXTRACTION_ERROR";
 }
