@@ -3,7 +3,7 @@
   "name": "semanticRouting",
   "version": "v1",
   "displayName": "Model Semantic Routing",
-  "description": "This policy allows you to route traffic to different models within the same AI/LLM vendor in a round robin fashion",
+  "description": "This policy allows you to route traffic to different AI/LLM models based on the semantic similarity between user requests and predefined utterances.",
   "policyAttributes": [
     {
       "name": "semanticRoutingConfigs",

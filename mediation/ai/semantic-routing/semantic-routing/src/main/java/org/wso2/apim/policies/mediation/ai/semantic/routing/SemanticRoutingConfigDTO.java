@@ -18,22 +18,38 @@
 
 package org.wso2.apim.policies.mediation.ai.semantic.routing;
 
-import com.google.gson.annotations.SerializedName;
 import org.wso2.carbon.apimgt.api.gateway.ModelEndpointDTO;
 
 import java.util.List;
 
 public class SemanticRoutingConfigDTO {
 
-    private List<RouteConfig> production;
+    private EnvironmentConfig production;
     
-    private List<RouteConfig> sandbox;
+    private EnvironmentConfig sandbox;
     
-    @SerializedName("Path")
-    private PathConfig Path;
+    private PathConfig path;
     
-    @SerializedName("Default")
-    private DefaultConfig Default;
+    public static class EnvironmentConfig {
+        private DefaultConfig defaultModel;
+        private List<RouteConfig> routes;
+        
+        public DefaultConfig getDefaultModel() {
+            return defaultModel;
+        }
+        
+        public void setDefaultModel(DefaultConfig defaultModel) {
+            this.defaultModel = defaultModel;
+        }
+        
+        public List<RouteConfig> getRoutes() {
+            return routes;
+        }
+        
+        public void setRoutes(List<RouteConfig> routes) {
+            this.routes = routes;
+        }
+    }
     
     public static class PathConfig {
         private String contentpath;
@@ -104,8 +120,6 @@ public class SemanticRoutingConfigDTO {
 
         public void setScorethreshold(String scorethreshold) {
             this.scorethreshold = scorethreshold;
-            // Threshold parsing and validation handled in SemanticRouting.initializeRouteConfig()
-            // No default threshold - user must provide valid value or route uses Default fallback
         }
 
         public double getScoreThreshold() {
@@ -141,35 +155,27 @@ public class SemanticRoutingConfigDTO {
         }
     }
 
-    public List<RouteConfig> getProduction() {
+    public EnvironmentConfig getProduction() {
         return production;
     }
 
-    public void setProduction(List<RouteConfig> production) {
+    public void setProduction(EnvironmentConfig production) {
         this.production = production;
     }
 
-    public List<RouteConfig> getSandbox() {
+    public EnvironmentConfig getSandbox() {
         return sandbox;
     }
 
-    public void setSandbox(List<RouteConfig> sandbox) {
+    public void setSandbox(EnvironmentConfig sandbox) {
         this.sandbox = sandbox;
     }
     
-    public DefaultConfig getDefault() {
-        return Default;
-    }
-    
-    public void setDefault(DefaultConfig Default) {
-        this.Default = Default;
-    }
-    
     public PathConfig getPath() {
-        return Path;
+        return path;
     }
     
-    public void setPath(PathConfig Path) {
-        this.Path = Path;
+    public void setPath(PathConfig path) {
+        this.path = path;
     }
 }
