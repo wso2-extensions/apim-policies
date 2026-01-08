@@ -199,9 +199,17 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
     /**
      * Retrieves the target configuration based on the API key type (production or sandbox).
      *
-     * @param messageContext the message context
-     * @param policyConfig the policy configuration
-     * @return the deployment configuration for the current environment
+     * policyConfig contains BOTH production and sandbox configurations.
+     * This method selects the appropriate one based on the current request's environment.
+     *
+     * Flow:
+     *   policyConfig (full config with both environments)
+     *       ↓ select based on apiKeyType
+     *   targetConfig (environment-specific config: either production OR sandbox)
+     *
+     * @param messageContext the message context containing the API key type property
+     * @param policyConfig the full policy configuration containing both production and sandbox configs
+     * @return the deployment configuration for the current environment (production or sandbox)
      */
     private IntelligentModelRoutingConfigDTO.DeploymentConfigDTO getTargetConfig(
             MessageContext messageContext, IntelligentModelRoutingConfigDTO policyConfig) {
@@ -209,8 +217,10 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             return null;
         }
 
+        // Determine if this is a production or sandbox request
         String apiKeyType = (String) messageContext.getProperty(APIConstants.API_KEY_TYPE);
 
+        // Select the environment-specific config based on the API key type
         IntelligentModelRoutingConfigDTO.DeploymentConfigDTO selectedConfig = APIConstants.API_KEY_TYPE_PRODUCTION
                 .equals(apiKeyType)
                 ? policyConfig.getProduction()
@@ -234,7 +244,6 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
 
         Map<String, Object> routeConfigs = new HashMap<>();
         routeConfigs.put(AIAPIConstants.TARGET_MODEL_ENDPOINT, selectedEndpoint);
-        routeConfigs.put(AIAPIConstants.SUSPEND_DURATION, endpoints.getSuspendDuration() * AIAPIConstants.MILLISECONDS_IN_SECOND);
         messageContext.setProperty(AIAPIConstants.INTELLIGENT_MODEL_ROUTING_CONFIGS, routeConfigs);
     }
 

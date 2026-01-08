@@ -25,12 +25,9 @@ import java.util.List;
 
 public class IntelligentModelRoutingConfigDTO {
 
-    private static final long DEFAULT_SUSPEND_DURATION = 0L;
-
     private DeploymentConfigDTO production;
     private DeploymentConfigDTO sandbox;
     private ContentPathConfig contentPath;
-    private Long suspendDuration;
 
     public static class DeploymentConfigDTO {
         private ModelEndpointDTO defaultModel;
@@ -124,14 +121,6 @@ public class IntelligentModelRoutingConfigDTO {
 
     public void setSandbox(DeploymentConfigDTO sandbox) {
         this.sandbox = sandbox;
-    }
-
-    public Long getSuspendDuration() {
-        return suspendDuration != null ? suspendDuration : DEFAULT_SUSPEND_DURATION;
-    }
-
-    public void setSuspendDuration(Long suspendDuration) {
-        this.suspendDuration = suspendDuration;
     }
 
     public ContentPathConfig getContentPath() {
