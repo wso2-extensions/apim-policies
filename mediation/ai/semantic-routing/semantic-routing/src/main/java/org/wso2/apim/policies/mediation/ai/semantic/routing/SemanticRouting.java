@@ -123,7 +123,9 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
                 if (parsedThreshold >= 0.0 && parsedThreshold <= 1.0) {
                     threshold = parsedThreshold;
                 }
-            } catch (NumberFormatException ignored) {
+            } catch (NumberFormatException e) {
+                log.warn("Invalid score threshold value: " + route.getScorethreshold() +
+                        ", using default: " + DEFAULT_SIMILARITY_THRESHOLD, e);
             }
         }
         route.setScoreThreshold(threshold);
