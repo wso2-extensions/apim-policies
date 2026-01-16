@@ -19,7 +19,7 @@
 package org.wso2.apim.policies.mediation.ai.intelligent.model.routing.internal;
 
 import org.wso2.carbon.apimgt.api.EmbeddingProviderService;
-import org.wso2.carbon.apimgt.api.LLMProviderServiceForChatCompletion;
+import org.wso2.carbon.apimgt.api.AILLMProviderService;
 
 /**
  * Singleton holder for managing references to shared services.
@@ -29,12 +29,14 @@ public class ServiceReferenceHolder {
     private static final ServiceReferenceHolder instance = new ServiceReferenceHolder();
 
     private EmbeddingProviderService embeddingProvider;
-    private LLMProviderServiceForChatCompletion llmProvider;
+    private AILLMProviderService llmProvider;
 
     private ServiceReferenceHolder() {
+
     }
 
     public static ServiceReferenceHolder getInstance() {
+
         return instance;
     }
 
@@ -48,11 +50,13 @@ public class ServiceReferenceHolder {
         this.embeddingProvider = embeddingProvider;
     }
 
-    public LLMProviderServiceForChatCompletion getLLMProvider() {
+    public AILLMProviderService getLLMProvider() {
+
         return llmProvider;
     }
 
-    public void setLLMProvider(LLMProviderServiceForChatCompletion llmProvider) {
+    public void setLLMProvider(AILLMProviderService llmProvider) {
+
         this.llmProvider = llmProvider;
     }
 }

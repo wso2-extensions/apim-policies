@@ -30,104 +30,126 @@ public class IntelligentModelRoutingConfigDTO {
     private ContentPathConfig contentPath;
 
     public static class DeploymentConfigDTO {
+
         private ModelEndpointDTO defaultModel;
         private List<RoutingRuleDTO> routingrules;
 
         public ModelEndpointDTO getDefaultModel() {
+
             return defaultModel;
         }
 
         public void setDefaultModel(ModelEndpointDTO defaultModel) {
+
             this.defaultModel = defaultModel;
         }
 
         public List<RoutingRuleDTO> getRoutingrules() {
+
             return routingrules;
         }
 
         public void setRoutingrules(List<RoutingRuleDTO> routingrules) {
+
             this.routingrules = routingrules;
         }
     }
 
     public static class ContentPathConfig {
+
         private String path;
 
         public String getPath() {
+
             return path;
         }
 
         public void setPath(String path) {
+
             this.path = path;
         }
     }
 
     public static class RoutingRuleDTO {
+
         private String name;
         private String context;
         private String model;
         private String endpointId;
 
         public String getName() {
+
             return name;
         }
 
         public void setName(String name) {
+
             this.name = name;
         }
 
         public String getContext() {
+
             return context;
         }
 
         public void setContext(String context) {
+
             this.context = context;
         }
 
         public String getModel() {
+
             return model;
         }
 
         public void setModel(String model) {
+
             this.model = model;
         }
 
         public String getEndpointId() {
+
             return endpointId;
         }
 
         public void setEndpointId(String endpointId) {
+
             this.endpointId = endpointId;
         }
 
         public boolean isValid() {
-            return !StringUtils.isEmpty(name)
-                    && !StringUtils.isEmpty(model)
-                    && !StringUtils.isEmpty(endpointId);
+
+            return !StringUtils.isEmpty(name) && !StringUtils.isEmpty(model) && !StringUtils.isEmpty(endpointId);
         }
     }
 
     public DeploymentConfigDTO getProduction() {
+
         return production;
     }
 
     public void setProduction(DeploymentConfigDTO production) {
+
         this.production = production;
     }
 
     public DeploymentConfigDTO getSandbox() {
+
         return sandbox;
     }
 
     public void setSandbox(DeploymentConfigDTO sandbox) {
+
         this.sandbox = sandbox;
     }
 
     public ContentPathConfig getContentPath() {
+
         return contentPath;
     }
 
     public void setContentPath(ContentPathConfig contentPath) {
+
         this.contentPath = contentPath;
     }
 }

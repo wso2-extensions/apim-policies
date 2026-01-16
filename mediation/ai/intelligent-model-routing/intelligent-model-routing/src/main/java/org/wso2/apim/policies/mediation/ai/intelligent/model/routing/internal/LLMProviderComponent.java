@@ -22,7 +22,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
-import org.wso2.carbon.apimgt.api.LLMProviderServiceForChatCompletion;
+import org.wso2.carbon.apimgt.api.AILLMProviderService;
 
 @Component(
         name = "org.wso2.apim.policies.mediation.ai.intelligent.model.routing.internal.LLMProviderComponent",
@@ -32,16 +32,18 @@ public class LLMProviderComponent {
 
     @Reference(
             name = "llm.provider.service",
-            service = LLMProviderServiceForChatCompletion.class,
+            service = AILLMProviderService.class,
             cardinality = ReferenceCardinality.MANDATORY,
             policy = ReferencePolicy.DYNAMIC,
             unbind = "unbindProvider"
     )
-    protected void bindProvider(LLMProviderServiceForChatCompletion provider) {
+    protected void bindProvider(AILLMProviderService provider) {
+
         ServiceReferenceHolder.getInstance().setLLMProvider(provider);
     }
 
-    protected void unbindProvider(LLMProviderServiceForChatCompletion provider) {
+    protected void unbindProvider(AILLMProviderService provider) {
+
         ServiceReferenceHolder.getInstance().setLLMProvider(null);
     }
 }
