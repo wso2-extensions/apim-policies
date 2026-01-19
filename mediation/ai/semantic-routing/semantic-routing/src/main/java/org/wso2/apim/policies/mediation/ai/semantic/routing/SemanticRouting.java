@@ -283,6 +283,10 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
      */
     private double cosineSimilarity(double[] vectorA, double[] vectorB) {
 
+        if (vectorA == null || vectorB == null || vectorA.length != vectorB.length) {
+            return 0.0;
+        }
+
         double dotProduct = 0.0;
         double normA = 0.0;
         double normB = 0.0;
