@@ -48,6 +48,8 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.wso2.apim.policies.mediation.ai.semantic.cache.SemanticCacheConstants.REQUEST_CACHE_HIT;
+
 /**
  * Semantic Cache mediator.
  * <p>
@@ -189,6 +191,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         String retrievedResponse = vectorDBProvider.retrieve(embeddings, filter);
         CacheableResponse cachedResponse = null;
         if (retrievedResponse != null) {
+            messageContext.setProperty(REQUEST_CACHE_HIT, true);
             cachedResponse = gson.fromJson(retrievedResponse, CacheableResponse.class);
         }
         if (cachedResponse != null && cachedResponse.getResponsePayload() != null) {
