@@ -25,7 +25,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.ManagedLifecycle;
-import org.apache.synapse.Mediator;
 import org.apache.synapse.MessageContext;
 import org.apache.synapse.SynapseConstants;
 import org.apache.synapse.commons.json.JsonUtil;
@@ -313,10 +312,9 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
         }
 
         messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, targetEndpoint.getEndpointId());
-
         Map<String, Object> routingConfigs = new HashMap<>();
         routingConfigs.put(AIAPIConstants.TARGET_MODEL_ENDPOINT, targetEndpoint);
-        messageContext.setProperty(AIAPIConstants.SEMANTIC_ROUTING_CONFIGS, routingConfigs);
+        messageContext.setProperty(AIAPIConstants.ROUTING_CONFIGS, routingConfigs);
 
         if (log.isDebugEnabled()) {
             log.debug("Routed to model: " + targetEndpoint.getModel());
@@ -350,7 +348,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
 
         Map<String, Object> routingConfigs = new HashMap<>();
         routingConfigs.put(AIAPIConstants.TARGET_MODEL_ENDPOINT, defaultEndpoint);
-        messageContext.setProperty(AIAPIConstants.SEMANTIC_ROUTING_CONFIGS, routingConfigs);
+        messageContext.setProperty(AIAPIConstants.ROUTING_CONFIGS, routingConfigs);
 
         if (log.isDebugEnabled()) {
             log.debug("Routed to default model: " + defaultEndpoint.getModel());
@@ -359,27 +357,12 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
     }
 
     /**
-     * Handles errors by setting error properties and triggering the fault sequence.
+     * Handles errors by setting error properties in the message context.
      */
     private boolean handleError(MessageContext messageContext, int errorCode, String errorMessage) {
 
         messageContext.setProperty(SynapseConstants.ERROR_CODE, errorCode);
-        messageContext.setProperty(SemanticRoutingConstants.ERROR_TYPE, SemanticRoutingConstants.SEMANTIC_ROUTING);
-        messageContext.setProperty(SemanticRoutingConstants.CUSTOM_HTTP_SC, SemanticRoutingConstants.ROUTING_ERROR_CODE);
         messageContext.setProperty(SynapseConstants.ERROR_MESSAGE, errorMessage);
-
-        if (log.isDebugEnabled()) {
-            log.debug("Error in semantic routing - triggering fault sequence. Error: " + errorMessage);
-        }
-
-        Mediator faultMediator = messageContext.getSequence(SemanticRoutingConstants.FAULT_SEQUENCE_KEY);
-        if (faultMediator == null) {
-            faultMediator = messageContext.getFaultSequence();
-        }
-
-        if (faultMediator != null) {
-            faultMediator.mediate(messageContext);
-        }
         return false;
     }
 

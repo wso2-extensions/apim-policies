@@ -24,7 +24,6 @@ import org.apache.synapse.commons.json.JsonUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.ManagedLifecycle;
-import org.apache.synapse.Mediator;
 import org.apache.synapse.MessageContext;
 import org.apache.synapse.SynapseConstants;
 import org.apache.synapse.core.SynapseEnvironment;
@@ -35,7 +34,6 @@ import org.wso2.carbon.apimgt.api.APIConstants.AIAPIConstants;
 import org.wso2.carbon.apimgt.api.AILLMProviderService;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.api.gateway.ModelEndpointDTO;
-
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.StringUtils;
 
@@ -234,7 +232,7 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
         messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, selectedEndpoint.getEndpointId());
         Map<String, Object> routeConfigs = new HashMap<>();
         routeConfigs.put(AIAPIConstants.TARGET_MODEL_ENDPOINT, selectedEndpoint);
-        messageContext.setProperty(AIAPIConstants.INTELLIGENT_MODEL_ROUTING_CONFIGS, routeConfigs);
+        messageContext.setProperty(AIAPIConstants.ROUTING_CONFIGS, routeConfigs);
     }
 
     /**
@@ -337,29 +335,12 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
     }
 
     /**
-     * Handles errors by setting error properties and triggering the fault sequence.
+     * Handles errors by setting error properties in the message context.
      */
     private boolean handleError(MessageContext messageContext, int errorCode, String errorMessage) {
 
         messageContext.setProperty(SynapseConstants.ERROR_CODE, errorCode);
-        messageContext.setProperty(IntelligentModelRoutingConstants.ERROR_TYPE,
-                IntelligentModelRoutingConstants.INTELLIGENT_MODEL_ROUTING);
-        messageContext.setProperty(IntelligentModelRoutingConstants.CUSTOM_HTTP_SC,
-                IntelligentModelRoutingConstants.ROUTING_ERROR_CODE);
         messageContext.setProperty(SynapseConstants.ERROR_MESSAGE, errorMessage);
-
-        if (log.isDebugEnabled()) {
-            log.debug("Error in intelligent model routing - triggering fault sequence. Error: " + errorMessage);
-        }
-
-        Mediator faultMediator = messageContext.getSequence(IntelligentModelRoutingConstants.FAULT_SEQUENCE_KEY);
-        if (faultMediator == null) {
-            faultMediator = messageContext.getFaultSequence();
-        }
-
-        if (faultMediator != null) {
-            faultMediator.mediate(messageContext);
-        }
         return false;
     }
 

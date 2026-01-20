@@ -25,13 +25,8 @@ public class IntelligentModelRoutingConstants {
 
     public static final String EMPTY_RESULT = "";
 
-    public static final int ROUTING_ERROR_CODE = 447;
     public static final int ROUTING_APIM_EXCEPTION_CODE = 900515;
     public static final int APIM_INTERNAL_EXCEPTION_CODE = 900967;
-    public static final String ERROR_TYPE = "ERROR_TYPE";
-    public static final String CUSTOM_HTTP_SC = "CUSTOM_HTTP_SC";
-    public static final String FAULT_SEQUENCE_KEY = "ai_routing_fault";
-    public static final String INTELLIGENT_MODEL_ROUTING = "INTELLIGENT_MODEL_ROUTING";
 
     public static final String ERROR_CONFIG_PARSE_FAILED = "Failed to parse intelligent model routing configuration";
     public static final String ERROR_LLM_PROVIDER_UNAVAILABLE = "LLM provider service is not available";
