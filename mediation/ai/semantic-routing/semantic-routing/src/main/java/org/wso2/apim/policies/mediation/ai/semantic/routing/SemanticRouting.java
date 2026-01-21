@@ -126,7 +126,8 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
                     threshold = parsedThreshold;
                 }
             } catch (NumberFormatException e) {
-                log.warn("Invalid score threshold value: " + route.getScorethreshold() + ", using default: " + DEFAULT_SIMILARITY_THRESHOLD, e);
+                log.warn("Invalid score threshold value: " + route.getScorethreshold() + ", using default: " +
+                        DEFAULT_SIMILARITY_THRESHOLD, e);
             }
         }
         route.setScoreThreshold(threshold);
@@ -181,7 +182,8 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
 
         try {
             String apiKeyType = (String) messageContext.getProperty(APIConstants.API_KEY_TYPE);
-            SemanticRoutingConfigDTO.EnvironmentConfig environmentConfig = APIConstants.API_KEY_TYPE_PRODUCTION.equals(apiKeyType) ? routingConfig.getProduction() : routingConfig.getSandbox();
+            SemanticRoutingConfigDTO.EnvironmentConfig environmentConfig = APIConstants.API_KEY_TYPE_PRODUCTION.equals(
+                    apiKeyType) ? routingConfig.getProduction() : routingConfig.getSandbox();
 
             if (environmentConfig == null) {
                 if (log.isDebugEnabled()) {
@@ -217,10 +219,12 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
             }
         } catch (APIManagementException e) {
             log.error(SemanticRoutingConstants.ERROR_EMBEDDING_COMPUTATION, e);
-            return handleError(messageContext, SemanticRoutingConstants.APIM_INTERNAL_EXCEPTION_CODE, SemanticRoutingConstants.ERROR_EMBEDDING_COMPUTATION + ": " + e.getMessage());
+            return handleError(messageContext, SemanticRoutingConstants.APIM_INTERNAL_EXCEPTION_CODE,
+                    SemanticRoutingConstants.ERROR_EMBEDDING_COMPUTATION + ": " + e.getMessage());
         } catch (Exception e) {
             log.error("Exception during semantic routing.", e);
-            return handleError(messageContext, SemanticRoutingConstants.APIM_INTERNAL_EXCEPTION_CODE, "Error during semantic routing: " + e.getMessage());
+            return handleError(messageContext, SemanticRoutingConstants.APIM_INTERNAL_EXCEPTION_CODE,
+                    "Error during semantic routing: " + e.getMessage());
         }
         return true;
     }
@@ -251,7 +255,8 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
             double similarityScore = computeMaxCosineSimilarity(requestEmbedding, utteranceEmbeddings);
 
             if (log.isDebugEnabled()) {
-                log.debug("Route: " + route.getModel() + ", Score: " + String.format("%.4f", similarityScore) + ", Threshold: " + route.getScoreThreshold());
+                log.debug("Route: " + route.getModel() + ", Score: " + String.format("%.4f", similarityScore) +
+                        ", Threshold: " + route.getScoreThreshold());
             }
 
             if (similarityScore > bestMatch.score) {
@@ -325,7 +330,8 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
     /**
      * Routes the request to the default model when no suitable match is found.
      */
-    private boolean routeToDefault(MessageContext messageContext, SemanticRoutingConfigDTO.EnvironmentConfig environmentConfig) {
+    private boolean routeToDefault(MessageContext messageContext,
+            SemanticRoutingConfigDTO.EnvironmentConfig environmentConfig) {
 
         if (environmentConfig == null || environmentConfig.getDefaultModel() == null) {
             log.warn(SemanticRoutingConstants.ERROR_NO_ROUTE_FOUND);

@@ -272,7 +272,8 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
     /**
      * Classifies the user request using the LLM provider to determine the appropriate route rule.
      */
-    private String classifyRequest(MessageContext messageContext, IntelligentModelRoutingConfigDTO policyConfig, IntelligentModelRoutingConfigDTO.DeploymentConfigDTO targetConfig) {
+    private String classifyRequest(MessageContext messageContext, IntelligentModelRoutingConfigDTO policyConfig,
+            IntelligentModelRoutingConfigDTO.DeploymentConfigDTO targetConfig) {
 
         try {
             String content = extractUserRequestContent(messageContext, policyConfig);
