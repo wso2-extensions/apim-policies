@@ -45,4 +45,5 @@ public class SemanticCacheConstants {
     
     // Text Processing
     public static final String TEXT_CLEAN_REGEX = "^\"|\"$";
+    public static final String REQUEST_CACHE_HIT = "api.analytics.cacheHit";
 }
