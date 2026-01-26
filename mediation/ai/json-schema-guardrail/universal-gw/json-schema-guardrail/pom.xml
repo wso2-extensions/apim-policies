@@ -51,10 +51,10 @@
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <org.apache.felix.version>3.3.0</org.apache.felix.version>
         <synapse.version>4.0.0-wso2v131</synapse.version>
-        <commons-lang3.version>3.13.0</commons-lang3.version>
+        <commons-lang3.version>3.18.0</commons-lang3.version>
         <jackson.version>2.19.0</jackson.version>
         <com.jayway.jsonpath.version>2.9.0.wso2v1</com.jayway.jsonpath.version>
-        <json.orbit.version>3.0.0.wso2v6</json.orbit.version>
+        <json.orbit.version>3.0.0.wso2v7</json.orbit.version>
         <everit-json-schema.version>1.14.5</everit-json-schema.version>
         <import.package.version.commons.logging>[1.2.0,2.0.0)</import.package.version.commons.logging>
         <axis2.osgi.version.range>[1.6.1, 1.7.0)</axis2.osgi.version.range>
@@ -134,12 +134,12 @@
                             org.wso2.apim.policies.mediation.ai.json.schema.guardrail;version="${project.version}"
                         </Export-Package>
                         <Import-Package>
-                            !org.apache.commons.lang3.*,
-                            !com.jayway.jsonpath.*,
-                            !net.minidev.json.*,
-                            !net.minidev.asm.*,
-                            !org.json.*,
-                            !com.github.erosb.*,
+                            org.apache.commons.lang3.*,
+                            com.jayway.jsonpath.*,
+                            net.minidev.json.*,
+                            net.minidev.asm.*,
+                            org.json.*,
+                            com.github.erosb.*,
                             org.apache.axis2; version="${axis2.osgi.version.range}",
                             org.apache.axis2.description; version="${axis2.osgi.version.range}",
                             org.apache.axis2.engine; version="${axis2.osgi.version.range}",
@@ -156,12 +156,6 @@
                             org.apache.synapse.*,
                             *;resolution:=optional
                         </Import-Package>
-                        <Embed-Dependency>
-                            json;scope=compile|runtime,
-                            json-path;scope=compile|runtime,
-                            everit-json-schema;scope=compile|runtime,
-                            commons-lang3;scope=compile|runtime
-                        </Embed-Dependency>
                         <DynamicImport-Package>*</DynamicImport-Package>
                     </instructions>
                 </configuration>
