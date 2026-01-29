@@ -18,6 +18,9 @@
 
 package org.wso2.apim.policies.mediation.ai.cbr;
 
+/**
+ * Constants for Content Based Model Router Policy.
+ */
 public class ContentBasedModelRouterConstants {
     public static final String API_KEY_TYPE = "AM_KEY_TYPE";
     public static final String API_KEY_TYPE_PRODUCTION = "PRODUCTION";

@@ -49,6 +49,7 @@ public class ContentBasedModelRouter extends AbstractMediator implements Managed
     private static final Log logger = LogFactory.getLog(ContentBasedModelRouter.class);
 
     private String contentBasedModelRoutingConfigs;
+    private CBRPolicyConfigDTO config;
 
     /**
      * Initializes the ContentBasedModelRouter mediator.
@@ -59,6 +60,12 @@ public class ContentBasedModelRouter extends AbstractMediator implements Managed
     public void init(SynapseEnvironment synapseEnvironment) {
         if (logger.isDebugEnabled()) {
             logger.debug("Initializing ContentBasedModelRouter.");
+        }
+
+        try {
+            config = new Gson().fromJson(contentBasedModelRoutingConfigs, CBRPolicyConfigDTO.class);
+        } catch (JsonSyntaxException e) {
+            logger.error("Failed to parse content based routing configuration", e);
         }
     }
 
@@ -80,14 +87,6 @@ public class ContentBasedModelRouter extends AbstractMediator implements Managed
     public boolean mediate(MessageContext messageContext) {
         if (logger.isDebugEnabled()) {
             logger.debug("ContentBasedModelRouter mediation started.");
-        }
-
-        CBRPolicyConfigDTO config;
-        try {
-            config = new Gson().fromJson(contentBasedModelRoutingConfigs, CBRPolicyConfigDTO.class);
-        } catch (JsonSyntaxException e) {
-            logger.error("Failed to parse content based routing configuration", e);
-            return false;
         }
 
         String apiKeyType = (String) messageContext.getProperty(ContentBasedModelRouterConstants.API_KEY_TYPE);
