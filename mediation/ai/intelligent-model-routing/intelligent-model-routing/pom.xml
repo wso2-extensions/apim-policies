@@ -20,7 +20,7 @@
 
     <groupId>org.wso2.am.policies</groupId>
     <artifactId>org.wso2.am.policies.mediation.ai.intelligent-model-routing</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>0.0.9-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <name>WSO2 APIM Mediation Policies - Intelligent Model Routing</name>
 
