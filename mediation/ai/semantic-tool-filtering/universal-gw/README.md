@@ -124,8 +124,8 @@ embedding_model = "text-embedding-3-small"
 |--------------------|----------------------------|
 | `Selection Mode`   | `By Rank`                  |
 | `Limit`            | `3`                        |
-| `Query JSON Path`  | `$.messages[-1].content`   |
-| `Tools JSON Path`  | `$.tools`                  |
+| `Query JSON Path`  | `$.contents[0].parts[0].text`   |
+| `Tools JSON Path`  | `$.tools[0].function_declarations`                  |
 | `User Query Is JSON` | `true`                   |
 | `Tools Is JSON`    | `true`                     |
 
@@ -134,54 +134,90 @@ embedding_model = "text-embedding-3-small"
 
 ```json
 {
-  "model": "gpt-4",
-  "messages": [
+  "contents": [
     {
       "role": "user",
-      "content": "What is the weather in London today?"
+      "parts": [
+        {
+          "text": "Get weather forecast. what are the tools you have?"
+        }
+      ]
     }
   ],
+  
   "tools": [
     {
-      "type": "function",
-      "function": {
-        "name": "get_weather",
-        "description": "Get current weather information for a specified location"
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "search_web",
-        "description": "Search the web for general information"
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "calculate_math",
-        "description": "Perform mathematical calculations"
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "translate_text",
-        "description": "Translate text between languages"
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "get_forecast",
-        "description": "Get weather forecast for the next several days"
-      }
+      "function_declarations": [
+        {
+          "name": "get_weather",
+          "description": "Get current weather and 7-day forecast for a location.",
+          "parameters": {
+            "type": "OBJECT",
+            "properties": {
+              "location": { "type": "string", "description": "The city and state, e.g. Denver, CO" }
+            },
+            "required": ["location"]
+          }
+        },
+        {
+          "name": "book_venue",
+          "description": "Reserve a conference room or meeting space.",
+          "parameters": {
+            "type": "OBJECT",
+            "properties": {
+              "location": { "type": "string" },
+              "capacity": { "type": "integer", "description": "Number of people" },
+              "date": { "type": "string", "description": "ISO date format" }
+            },
+            "required": ["location", "capacity", "date"]
+          }
+        },
+        {
+          "name": "find_restaurants",
+          "description": "Locate dining options based on cuisine and dietary needs.",
+          "parameters": {
+            "type": "OBJECT",
+            "properties": {
+              "location": { "type": "string" },
+              "dietary_options": { "type": "array", "items": { "type": "string" }, "description": "e.g. ['vegan', 'gluten-free']" }
+            },
+            "required": ["location"]
+          }
+        },
+        {
+          "name": "calendar_add",
+          "description": "Create a new event on the users primary calendar.",
+          "parameters": {
+            "type": "OBJECT",
+            "properties": {
+              "summary": { "type": "string" },
+              "start_time": { "type": "string" },
+              "end_time": { "type": "string" }
+            },
+            "required": ["summary", "start_time"]
+          }
+        },
+        {
+          "name": "send_email",
+          "description": "Send an email to a specific recipient.",
+          "parameters": {
+            "type": "OBJECT",
+            "properties": {
+              "recipient": { "type": "string", "description": "Email address" },
+              "subject": { "type": "string" },
+              "body": { "type": "string" }
+            },
+            "required": ["recipient", "body"]
+          }
+        }
+      ]
     }
   ]
+
 }
 ```
 
-The policy will filter down to the 3 most relevant tools (e.g., `get_weather`, `get_forecast`, `search_web`) based on semantic similarity to the query.
+The policy will filter down to the 3 most relevant tools (e.g., `get_weather`, `book_venue`, `calendar_add`) based on semantic similarity to the query.
 
 ### Example: By Threshold Mode
 
@@ -191,3 +227,32 @@ The policy will filter down to the 3 most relevant tools (e.g., `get_weather`, `
 | `Threshold`        | `0.7`                      |
 
 Only tools with a similarity score >= 0.7 will be included in the filtered request.
+
+### Example: Text Format (userQueryIsJson=false, toolsIsJson=false)
+
+When the request body contains the user query and tool definitions as plain text using XML-like tags, set both `User Query Is JSON` and `Tools Is JSON` to `false`. The policy will scan the raw request body for `<userq>`, `<toolname>`, and `<tooldescription>` tags — no JSONPath configuration is needed.
+
+| Field                | Example     |
+|----------------------|-------------|
+| `Selection Mode`     | `By Rank`   |
+| `Limit`              | `3`         |
+| `User Query Is JSON` | `false`     |
+| `Tools Is JSON`      | `false`     |
+
+Invoke the API with a request body where the text content embeds tool definitions and the user query using tags:
+
+```json
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "You are a logistics assistant with access to the following tools:\n\n<toolname>get_weather</toolname><tooldescription>Get current weather and 7-day forecast for a location</tooldescription>\n<toolname>book_venue</toolname><tooldescription>Reserve meeting spaces or conference rooms</tooldescription>\n<toolname>book_flight</toolname><tooldescription>Search and book airline tickets</tooldescription>\n<toolname>find_restaurants</toolname><tooldescription>Locate dining options based on cuisine and dietary needs</tooldescription>\n<toolname>calendar_add</toolname><tooldescription>Create a new event on the user's primary calendar</tooldescription>\n<toolname>send_email</toolname><tooldescription>Send an email to a specific recipient</tooldescription>\n\n<userq>I'm planning a corporate retreat in Denver next weekend. Check the weather, book a conference room for 15 people, find vegan catering, and email the itinerary to sarah@company.com.</userq>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+The policy extracts the `<userq>` tag as the query and each `<toolname>`/`<tooldescription>` pair as a tool, then filters down to the 3 most relevant (e.g., `get_weather`, `book_venue`, `find_restaurants`) before forwarding the request.
