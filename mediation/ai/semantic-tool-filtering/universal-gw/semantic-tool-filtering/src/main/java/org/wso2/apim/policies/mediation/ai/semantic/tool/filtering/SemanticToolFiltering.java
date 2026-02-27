@@ -118,7 +118,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         }
 
         // Validate threshold
-        if (threshold < 0.0 || threshold > 1.0) {
+        if (threshold <= 0.0 || threshold >= 1.0) {
             throw new IllegalArgumentException("Invalid threshold: " + threshold
                     + ". Must be between 0.0 and 1.0.");
         }
