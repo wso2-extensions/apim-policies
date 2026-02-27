@@ -115,7 +115,7 @@ public class EmbeddingCache {
         public ToolEntry(String hashKey, String name, double[] embedding) {
             this.hashKey = hashKey;
             this.name = name;
-            this.embedding = embedding;
+            this.embedding = embedding != null ? embedding.clone() : new double[0];
         }
 
         public String getHashKey() {
@@ -127,7 +127,7 @@ public class EmbeddingCache {
         }
 
         public double[] getEmbedding() {
-            return embedding;
+            return embedding.clone();
         }
     }
 
