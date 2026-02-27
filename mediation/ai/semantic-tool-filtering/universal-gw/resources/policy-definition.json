@@ -31,7 +31,7 @@
       "displayName": "Limit",
       "description": "The number of most relevant tools to include (used if selectionMode is 'By Rank').",
       "type": "Integer",
-      "validationRegex": "^([0-9]|1[0-9]|20)$",
+      "validationRegex": "^[1-9][0-9]*$",
       "defaultValue": "5",
       "allowedValues": [],
       "required": false
