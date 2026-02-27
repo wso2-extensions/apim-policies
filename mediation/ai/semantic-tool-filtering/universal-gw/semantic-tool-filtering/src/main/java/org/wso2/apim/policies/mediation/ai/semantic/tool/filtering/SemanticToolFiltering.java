@@ -27,9 +27,7 @@ import org.apache.axis2.AxisFault;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.ManagedLifecycle;
-import org.apache.synapse.Mediator;
 import org.apache.synapse.MessageContext;
-import org.apache.synapse.SynapseConstants;
 import org.apache.synapse.commons.json.JsonUtil;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
@@ -106,6 +104,33 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
             throw new IllegalStateException("Embedding provider is not registered or available");
         }
 
+        // Validate selectionMode
+        if (!SemanticToolFilteringConstants.SELECTION_MODE_TOP_K.equals(selectionMode)
+                && !SemanticToolFilteringConstants.SELECTION_MODE_THRESHOLD.equals(selectionMode)) {
+            throw new IllegalArgumentException("Invalid selectionMode: '" + selectionMode
+                    + "'. Allowed values are '" + SemanticToolFilteringConstants.SELECTION_MODE_TOP_K
+                    + "' or '" + SemanticToolFilteringConstants.SELECTION_MODE_THRESHOLD + "'.");
+        }
+
+        // Validate limit (topK)
+        if (limit <= 0) {
+            throw new IllegalArgumentException("Invalid limit: " + limit
+                    + ". Must be a positive integer.");
+        }
+
+        // Validate threshold
+        if (threshold < 0.0 || threshold > 1.0) {
+            throw new IllegalArgumentException("Invalid threshold: " + threshold
+                    + ". Must be between 0.0 and 1.0.");
+        }
+
+        // Validate queryJSONPath
+        if (userQueryIsJson && !isValidSimpleJSONPath(queryJSONPath)) {
+            throw new IllegalArgumentException("Invalid queryJSONPath: " + queryJSONPath
+                    + ". Only simple dotted paths with optional array indices are supported "
+                    + "(e.g., '$.messages[-1].content', '$.query').");
+        }
+
         // Validate toolsJSONPath
         if (toolsIsJson && !isValidSimpleJSONPath(toolsJSONPath)) {
             throw new IllegalArgumentException("Invalid toolsJSONPath: " + toolsJSONPath
@@ -168,16 +193,9 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
             }
 
         } catch (Exception e) {
-            logger.error("Exception occurred during semantic tool filtering mediation.", e);
-            messageContext.setProperty(SynapseConstants.ERROR_CODE,
-                    SemanticToolFilteringConstants.APIM_INTERNAL_EXCEPTION_CODE);
-            messageContext.setProperty(SynapseConstants.ERROR_MESSAGE,
-                    "Error occurred during semantic tool filtering mediation");
-            Mediator faultMediator = messageContext.getFaultSequence();
-            if (faultMediator != null) {
-                faultMediator.mediate(messageContext);
-            }
-            return false;
+            logger.warn("Exception occurred during semantic tool filtering mediation. "
+                    + "Passing request through without filtering.", e);
+            return true;
         }
     }
 
@@ -308,8 +326,8 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         try {
             JsonUtil.getNewJsonPayload(axis2MC, modifiedBody, true, true);
         } catch (AxisFault e) {
-            logger.error("Error replacing JSON payload");
-            return false;
+            logger.warn("Error replacing JSON payload. Passing request through without filtering.");
+            return true;
         }
 
         return true;
@@ -326,7 +344,9 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         // Extract user query from <userq> tags
         String userQuery = extractUserQueryFromText(content);
         if (userQuery == null || userQuery.isEmpty()) {
-            return sendError(messageContext, "User query start tag <userq> not found in text content");
+            logger.warn("User query start tag <userq> not found in text content. "
+                    + "Passing request through without filtering.");
+            return true;
         }
 
         // Extract tools from tags
@@ -418,8 +438,8 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         try {
             JsonUtil.getNewJsonPayload(axis2MC, modifiedContent, true, true);
         } catch (AxisFault e) {
-            logger.error("Error replacing text payload");
-            return false;
+            logger.warn("Error replacing text payload. Passing request through without filtering.");
+            return true;
         }
 
         return true;
@@ -526,8 +546,9 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
             try {
                 JsonUtil.getNewJsonPayload(axis2MC, modifiedBody, true, true);
             } catch (AxisFault e) {
-                logger.error("Error replacing JSON payload in mixed mode", e);
-                return false;
+                logger.warn("Error replacing JSON payload in mixed mode. "
+                        + "Passing request through without filtering.");
+                return true;
             }
 
         } else {
@@ -593,8 +614,9 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
             try {
                 JsonUtil.getNewJsonPayload(axis2MC, modifiedContent, true, true);
             } catch (AxisFault e) {
-                logger.error("Error replacing text payload in mixed mode");
-                return false;
+                logger.warn("Error replacing text payload in mixed mode. "
+                        + "Passing request through without filtering.");
+                return true;
             }
         }
 
@@ -1022,34 +1044,6 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
             return false;
         }
         return SIMPLE_JSON_PATH_PATTERN.matcher(path).matches();
-    }
-
-    /**
-     * Sets error properties and triggers the fault sequence.
-     *
-     * @param messageContext the message context
-     * @param errorMessage   the error message
-     * @return false to halt mediation
-     */
-    private boolean sendError(MessageContext messageContext, String errorMessage) {
-        logger.error("SemanticToolFiltering: " + errorMessage);
-
-        messageContext.setProperty(SynapseConstants.ERROR_CODE,
-                SemanticToolFilteringConstants.GUARDRAIL_APIM_EXCEPTION_CODE);
-        messageContext.setProperty(SemanticToolFilteringConstants.ERROR_TYPE,
-                SemanticToolFilteringConstants.ERROR_TYPE_VALUE);
-        messageContext.setProperty(SemanticToolFilteringConstants.CUSTOM_HTTP_SC,
-                SemanticToolFilteringConstants.GUARDRAIL_ERROR_CODE);
-        messageContext.setProperty(SynapseConstants.ERROR_MESSAGE, errorMessage);
-
-        Mediator faultMediator = messageContext.getSequence(SemanticToolFilteringConstants.FAULT_SEQUENCE_KEY);
-        if (faultMediator == null) {
-            faultMediator = messageContext.getFaultSequence();
-        }
-        if (faultMediator != null) {
-            faultMediator.mediate(messageContext);
-        }
-        return false;
     }
 
     // ---------- Inner Classes ----------

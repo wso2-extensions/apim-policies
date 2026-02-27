@@ -2,7 +2,7 @@
   "category": "Mediation",
   "name": "SemanticToolFiltering",
   "displayName": "Semantic Tool Filtering",
-  "version": "v1.0",
+  "version": "v1",
   "description": "Dynamically filters the tools provided within an API request based on their semantic relevance to the user query. Extracts both the query and tool definitions from the incoming payload, generates embeddings, performs similarity search, and replaces the tools array with a filtered subset.",
   "applicableFlows": [
     "request"
@@ -21,7 +21,7 @@
       "name": "selectionMode",
       "displayName": "Selection Mode",
       "description": "Method used to filter tools. 'By Rank' selects a fixed number of the most relevant tools. 'By Threshold' selects all tools exceeding a specific similarity score.",
-      "type": "String",
+      "type": "Enum",
       "allowedValues": ["By Rank", "By Threshold"],
       "defaultValue": "By Rank",
       "required": true
@@ -42,6 +42,7 @@
       "description": "Similarity threshold for filtering (0.0 to 1.0). Only tools with a score above this value are included (used if selectionMode is 'By Threshold').",
       "type": "String",
       "defaultValue": "0.7",
+      "validationRegex": "^(1(\\.0)?|0(\\.\\d+)?)$",
       "allowedValues": [],
       "required": false
     },
