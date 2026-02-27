@@ -68,10 +68,10 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
 
     /**
      * Regex pattern to validate simple JSONPath expressions.
-     * Supports patterns like: $.tools, $.data.items, $.results[0].tools
+     * Supports patterns like: $.tools, $.data.items, $.results[0].tools, $.messages[-1].content
      */
     private static final Pattern SIMPLE_JSON_PATH_PATTERN = Pattern.compile(
-            "^\\$\\.([a-zA-Z_][a-zA-Z0-9_]*(\\[\\d+\\])?\\.)*[a-zA-Z_][a-zA-Z0-9_]*(\\[\\d+\\])?$"
+            "^\\$\\.([a-zA-Z_][a-zA-Z0-9_]*(\\[-?\\d+\\])?\\.)*[a-zA-Z_][a-zA-Z0-9_]*(\\[-?\\d+\\])?$"
     );
 
     // Policy properties (set via Synapse reflection from artifact.j2)
@@ -683,7 +683,11 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
                     return null;
                 }
                 JsonArray jsonArray = arr.getAsJsonArray();
-                if (arrayIndex >= jsonArray.size()) {
+                // Support negative indices (e.g., -1 means last element)
+                if (arrayIndex < 0) {
+                    arrayIndex = jsonArray.size() + arrayIndex;
+                }
+                if (arrayIndex < 0 || arrayIndex >= jsonArray.size()) {
                     return null;
                 }
                 current = jsonArray.get(arrayIndex);
@@ -856,16 +860,21 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
                     JsonArray arr;
                     if (arrElement == null || !arrElement.isJsonArray()) {
                         arr = new JsonArray();
-                        for (int j = 0; j <= arrayIndex; j++) {
+                        for (int j = 0; j <= Math.max(arrayIndex, 0); j++) {
                             arr.add(JsonNull.INSTANCE);
                         }
                     } else {
                         arr = arrElement.getAsJsonArray();
                     }
-                    while (arr.size() <= arrayIndex) {
+                    // Support negative indices (e.g., -1 means last element)
+                    int resolvedIndex = arrayIndex < 0 ? arr.size() + arrayIndex : arrayIndex;
+                    if (resolvedIndex < 0) {
+                        return; // Out of bounds
+                    }
+                    while (arr.size() <= resolvedIndex) {
                         arr.add(JsonNull.INSTANCE);
                     }
-                    arr.set(arrayIndex, filteredTools);
+                    arr.set(resolvedIndex, filteredTools);
                     current.add(field, arr);
                 } else {
                     // Not last - descend into array element
@@ -874,10 +883,12 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
                         return; // Path doesn't exist
                     }
                     JsonArray arr = arrElement.getAsJsonArray();
-                    if (arr.size() <= arrayIndex) {
+                    // Support negative indices (e.g., -1 means last element)
+                    int resolvedIndex = arrayIndex < 0 ? arr.size() + arrayIndex : arrayIndex;
+                    if (resolvedIndex < 0 || resolvedIndex >= arr.size()) {
                         return; // Path doesn't exist
                     }
-                    current = arr.get(arrayIndex).getAsJsonObject();
+                    current = arr.get(resolvedIndex).getAsJsonObject();
                 }
             } else {
                 if (idx == parts.length - 1) {
