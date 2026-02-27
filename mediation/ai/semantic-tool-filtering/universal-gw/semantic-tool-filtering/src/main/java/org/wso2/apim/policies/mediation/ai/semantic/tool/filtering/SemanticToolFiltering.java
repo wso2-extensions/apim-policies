@@ -61,7 +61,6 @@ import java.util.regex.Pattern;
  * Tools and queries can be in JSON format (using JSONPath extraction) or text format
  * (using XML-like tags for extraction).
  * <p>
- * Ported from Go: semantictoolfiltering.go
  */
 public class SemanticToolFiltering extends AbstractMediator implements ManagedLifecycle {
 

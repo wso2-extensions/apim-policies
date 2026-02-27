@@ -44,7 +44,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Both levels use LRU eviction when capacity is reached. The cache is thread-safe
  * using a {@link ReentrantReadWriteLock}.
  * <p>
- * Ported from Go: embeddingcache.go
  */
 public class EmbeddingCache {
 
