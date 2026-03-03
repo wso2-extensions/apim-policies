@@ -288,7 +288,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
                 newToolIndex++;
             }
 
-            double similarity = cosineSimilarity(queryEmbedding, toolEmbedding);
+            double similarity = calculateCosineSimilarity(queryEmbedding, toolEmbedding);
             toolsWithScores.add(new ToolWithScore(toolObj, similarity));
         }
 
@@ -394,7 +394,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
                 newToolIndex++;
             }
 
-            double similarity = cosineSimilarity(queryEmbedding, toolEmbedding);
+            double similarity = calculateCosineSimilarity(queryEmbedding, toolEmbedding);
             toolsWithScores.add(new TextToolWithScore(tool, similarity));
         }
 
@@ -522,7 +522,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
                     newToolIndex++;
                 }
 
-                double similarity = cosineSimilarity(queryEmbedding, toolEmbedding);
+                double similarity = calculateCosineSimilarity(queryEmbedding, toolEmbedding);
                 toolsWithScores.add(new ToolWithScore(toolObj, similarity));
             }
 
@@ -580,7 +580,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
                     newToolIndex++;
                 }
 
-                double similarity = cosineSimilarity(queryEmbedding, toolEmbedding);
+                double similarity = calculateCosineSimilarity(queryEmbedding, toolEmbedding);
                 toolsWithScores.add(new TextToolWithScore(tool, similarity));
             }
 
@@ -781,7 +781,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
      * @param b second embedding vector
      * @return cosine similarity score between -1 and 1
      */
-    private double cosineSimilarity(double[] a, double[] b) {
+    private double calculateCosineSimilarity(double[] a, double[] b) {
         if (a == null || b == null || a.length == 0 || b.length == 0) {
             return 0.0;
         }
