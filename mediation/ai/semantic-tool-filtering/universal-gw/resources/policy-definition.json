@@ -2,7 +2,7 @@
   "category": "Mediation",
   "name": "SemanticToolFiltering",
   "displayName": "Semantic Tool Filtering",
-  "version": "v1",
+  "version": "v1.0",
   "description": "Dynamically filters the tools provided within an API request based on their semantic relevance to the user query. Extracts both the query and tool definitions from the incoming payload, generates embeddings, performs similarity search, and replaces the tools array with a filtered subset.",
   "applicableFlows": [
     "request"
