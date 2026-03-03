@@ -100,39 +100,39 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
 
         embeddingProvider = ServiceReferenceHolder.getInstance().getEmbeddingProvider();
         if (embeddingProvider == null) {
-            throw new IllegalStateException("Embedding provider is not registered or available");
-        }
+            log.error("Embedding provider is not registered or available");
+                    }
 
         // Validate selectionMode
         if (!SemanticToolFilteringConstants.SELECTION_MODE_TOP_K.equals(selectionMode)
                 && !SemanticToolFilteringConstants.SELECTION_MODE_THRESHOLD.equals(selectionMode)) {
-            throw new IllegalArgumentException("Invalid selectionMode: '" + selectionMode
+            log.error("Invalid selectionMode: '" + selectionMode
                     + "'. Allowed values are '" + SemanticToolFilteringConstants.SELECTION_MODE_TOP_K
                     + "' or '" + SemanticToolFilteringConstants.SELECTION_MODE_THRESHOLD + "'.");
         }
 
         // Validate limit (topK)
         if (limit <= 0) {
-            throw new IllegalArgumentException("Invalid limit: " + limit
+            log.error("Invalid limit: " + limit
                     + ". Must be a positive integer.");
         }
 
         // Validate threshold
         if (threshold <= 0.0 || threshold >= 1.0) {
-            throw new IllegalArgumentException("Invalid threshold: " + threshold
+            log.error("Invalid threshold: " + threshold
                     + ". Must be between 0.0 and 1.0.");
         }
 
         // Validate queryJSONPath
         if (userQueryIsJson && !isValidSimpleJSONPath(queryJSONPath)) {
-            throw new IllegalArgumentException("Invalid queryJSONPath: " + queryJSONPath
+            log.error("Invalid queryJSONPath: " + queryJSONPath
                     + ". Only simple dotted paths with optional array indices are supported "
                     + "(e.g., '$.messages[-1].content', '$.query').");
         }
 
         // Validate toolsJSONPath
         if (toolsIsJson && !isValidSimpleJSONPath(toolsJSONPath)) {
-            throw new IllegalArgumentException("Invalid toolsJSONPath: " + toolsJSONPath
+            log.error("Invalid toolsJSONPath: " + toolsJSONPath
                     + ". Only simple dotted paths with optional array indices are supported "
                     + "(e.g., '$.tools', '$.data.items', '$.results[0].tools').");
         }
@@ -764,10 +764,14 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
      * @param description the tool description text
      * @return SHA-256 hash of the cache key
      */
-    private String getCacheKey(String description) {
+    private String getCacheKey(String description) throws APIManagementException {
         // Include a fixed prefix to differentiate cache keys
         String combinedKey = "semantic-tool-filtering:" + description;
-        return EmbeddingCache.hashDescription(combinedKey);
+        try {
+            return EmbeddingCache.hashDescription(combinedKey);
+        } catch (RuntimeException e) {
+            throw new APIManagementException("Failed to generate cache key for tool description", e);
+        }
     }
 
     /**
