@@ -22,9 +22,6 @@ public class IntelligentModelRoutingConstants {
 
     public static final String EMPTY_RESULT = "";
 
-    public static final int ROUTING_APIM_EXCEPTION_CODE = 900515;
-    public static final int APIM_INTERNAL_EXCEPTION_CODE = 900967;
-
     public static final String ERROR_CONFIG_PARSE_FAILED = "Failed to parse intelligent model routing configuration";
     public static final String ERROR_LLM_PROVIDER_UNAVAILABLE = "LLM provider service is not available";
     public static final String ERROR_CONTENT_PATH_NOT_CONFIGURED = "Content path is not configured or empty";

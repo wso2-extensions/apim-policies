@@ -22,7 +22,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.ManagedLifecycle;
 import org.apache.synapse.MessageContext;
-import org.apache.synapse.SynapseConstants;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.mediators.AbstractMediator;
@@ -81,7 +80,7 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
     public boolean mediate(MessageContext messageContext) {
 
         try {
-            if (!hasConfiguration()) {
+            if (StringUtils.isEmpty(intelligentModelRoutingConfigs)) {
                 return true;
             }
 
@@ -89,18 +88,11 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             return processRouting(messageContext, policyConfig);
         } catch (IllegalStateException e) {
             log.error(IntelligentModelRoutingConstants.ERROR_CONFIG_PARSE_FAILED, e);
-            return handleError(messageContext, IntelligentModelRoutingConstants.ROUTING_APIM_EXCEPTION_CODE,
-                    e.getMessage());
+            return false;
         } catch (Exception e) {
-            log.error("Error in IntelligentModelRouting mediation", e);
-            return handleError(messageContext, IntelligentModelRoutingConstants.APIM_INTERNAL_EXCEPTION_CODE,
-                    "Error during intelligent model routing: " + e.getMessage());
+            log.error("Error during intelligent model routing", e);
+            return false;
         }
-    }
-
-    private boolean hasConfiguration() {
-
-        return !StringUtils.isEmpty(intelligentModelRoutingConfigs);
     }
 
     /**
@@ -262,7 +254,7 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             Object result = JsonPath.read(jsonPayload, contentPath);
             return result != null ? result.toString() : IntelligentModelRoutingConstants.EMPTY_RESULT;
         } catch (Exception e) {
-            log.warn(IntelligentModelRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + contentPath + "': " + e.getMessage());
+            log.error(IntelligentModelRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + contentPath + "': " + e.getMessage());
             return IntelligentModelRoutingConstants.EMPTY_RESULT;
         }
     }
@@ -364,16 +356,6 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             }
         }
         return null;
-    }
-
-    /**
-     * Handles errors by setting error properties in the message context.
-     */
-    private boolean handleError(MessageContext messageContext, int errorCode, String errorMessage) {
-
-        messageContext.setProperty(SynapseConstants.ERROR_CODE, errorCode);
-        messageContext.setProperty(SynapseConstants.ERROR_MESSAGE, errorMessage);
-        return false;
     }
 
     /**

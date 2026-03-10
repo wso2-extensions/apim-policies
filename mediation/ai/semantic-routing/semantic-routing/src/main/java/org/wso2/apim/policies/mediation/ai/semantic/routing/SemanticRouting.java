@@ -23,7 +23,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.ManagedLifecycle;
 import org.apache.synapse.MessageContext;
-import org.apache.synapse.SynapseConstants;
 import org.apache.synapse.commons.json.JsonUtil;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
@@ -217,12 +216,10 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
             }
         } catch (APIManagementException e) {
             log.error(SemanticRoutingConstants.ERROR_EMBEDDING_COMPUTATION, e);
-            return handleError(messageContext, SemanticRoutingConstants.APIM_INTERNAL_EXCEPTION_CODE,
-                    SemanticRoutingConstants.ERROR_EMBEDDING_COMPUTATION + ": " + e.getMessage());
+            return false;
         } catch (Exception e) {
             log.error("Exception during semantic routing.", e);
-            return handleError(messageContext, SemanticRoutingConstants.APIM_INTERNAL_EXCEPTION_CODE,
-                    "Error during semantic routing: " + e.getMessage());
+            return false;
         }
         return true;
     }
@@ -361,16 +358,6 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
     }
 
     /**
-     * Handles errors by setting error properties in the message context.
-     */
-    private boolean handleError(MessageContext messageContext, int errorCode, String errorMessage) {
-
-        messageContext.setProperty(SynapseConstants.ERROR_CODE, errorCode);
-        messageContext.setProperty(SynapseConstants.ERROR_MESSAGE, errorMessage);
-        return false;
-    }
-
-    /**
      * Extracts the user request content from the message payload using the configured JSON path.
      */
     private String extractUserRequest(MessageContext messageContext) {
@@ -397,7 +384,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
             Object result = JsonPath.read(requestPayload, jsonPath);
             return result != null ? result.toString() : SemanticRoutingConstants.EMPTY_RESULT;
         } catch (Exception e) {
-            log.warn(SemanticRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + jsonPath + "': " + e.getMessage());
+            log.error(SemanticRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + jsonPath + "': " + e.getMessage());
             return SemanticRoutingConstants.EMPTY_RESULT;
         }
     }
