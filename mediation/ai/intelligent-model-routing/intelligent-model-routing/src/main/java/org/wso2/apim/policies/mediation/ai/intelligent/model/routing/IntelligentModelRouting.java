@@ -196,6 +196,7 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             throws IllegalStateException {
 
         try {
+            config = config.replace("&quot;", "\"");
             IntelligentModelRoutingConfigDTO endpoints = new Gson().fromJson(config, IntelligentModelRoutingConfigDTO.class);
             if (endpoints == null) {
                 throw new IllegalStateException(IntelligentModelRoutingConstants.ERROR_CONFIG_PARSE_FAILED + ": null config");

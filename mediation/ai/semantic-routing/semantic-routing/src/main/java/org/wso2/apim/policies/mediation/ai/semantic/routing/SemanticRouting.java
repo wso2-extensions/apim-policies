@@ -77,6 +77,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
     private void loadRoutingConfiguration(String configJson) {
 
         try {
+            configJson = configJson.replace("&quot;", "\"");
             this.routingConfig = new Gson().fromJson(configJson, SemanticRoutingConfigDTO.class);
             if (routingConfig == null) {
                 throw new IllegalStateException(SemanticRoutingConstants.ERROR_CONFIG_PARSE_FAILED + ": null config");
