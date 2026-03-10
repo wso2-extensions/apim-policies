@@ -7,8 +7,8 @@
   "policyAttributes": [
     {
       "name": "intelligentModelRoutingConfigs",
-      "displayName": "Intelligent Model Routing Configurations",
-      "description": "Configurations for the Intelligent Model Routing policy",
+      "displayName": "Intelligent model routing configurations",
+      "description": "Configurations for the intelligent model routing policy",
       "validationRegex": "^.+$",
       "type": "String",
       "required": true

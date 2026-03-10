@@ -7,8 +7,8 @@
   "policyAttributes": [
     {
       "name": "semanticRoutingConfigs",
-      "displayName": "Semantic Route Configurations",
-      "description": "Configurations for the Semantic Routing policy",
+      "displayName": "Semantic route configurations",
+      "description": "Configurations for the semantic routing policy",
       "validationRegex": "^.+$",
       "type": "String",
       "required": true
