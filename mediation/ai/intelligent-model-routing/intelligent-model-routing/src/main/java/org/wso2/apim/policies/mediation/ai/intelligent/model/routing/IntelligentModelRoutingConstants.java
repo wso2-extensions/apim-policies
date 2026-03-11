@@ -20,7 +20,9 @@ package org.wso2.apim.policies.mediation.ai.intelligent.model.routing;
  */
 public class IntelligentModelRoutingConstants {
 
-    public static final String EMPTY_RESULT = "";
+    public static final String CLASSIFICATION_SYSTEM_PROMPT =
+            "You are an API routing assistant. Analyze the user request and determine the best category. "
+                    + "Respond with ONLY the category name, nothing else.";
 
     public static final String ERROR_CONFIG_PARSE_FAILED = "Failed to parse intelligent model routing configuration";
     public static final String ERROR_LLM_PROVIDER_UNAVAILABLE = "LLM provider service is not available";
@@ -33,5 +35,4 @@ public class IntelligentModelRoutingConstants {
     public static final String WARN_EMPTY_LLM_RESPONSE = "LLM returned empty response, falling back to default route";
     public static final String WARN_NO_ROUTE_RULE_MATCHED = "No route rule matched LLM response, falling back to default route.";
     public static final String DEBUG_LLM_RETURNED_NONE = "LLM explicitly returned NONE, using default route";
-
 }

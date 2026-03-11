@@ -17,21 +17,25 @@ package org.wso2.apim.policies.mediation.ai.intelligent.model.routing;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import org.apache.synapse.commons.json.JsonUtil;
+import com.jayway.jsonpath.InvalidJsonException;
+import com.jayway.jsonpath.InvalidPathException;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.ManagedLifecycle;
 import org.apache.synapse.MessageContext;
+import org.apache.synapse.commons.json.JsonUtil;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.mediators.AbstractMediator;
 import org.wso2.apim.policies.mediation.ai.intelligent.model.routing.internal.ServiceReferenceHolder;
-import org.wso2.carbon.apimgt.api.APIConstants.AIAPIConstants;
 import org.wso2.carbon.apimgt.api.AILLMProviderService;
-import org.wso2.carbon.apimgt.impl.APIConstants;
+import org.wso2.carbon.apimgt.api.APIConstants.AIAPIConstants;
+import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.gateway.ModelEndpointDTO;
-import com.jayway.jsonpath.JsonPath;
-import org.apache.commons.lang3.StringUtils;
+import org.wso2.carbon.apimgt.impl.APIConstants;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -86,12 +90,10 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
 
             IntelligentModelRoutingConfigDTO policyConfig = parseConfiguration(intelligentModelRoutingConfigs);
             return processRouting(messageContext, policyConfig);
-        } catch (IllegalStateException e) {
+        } catch (APIManagementException e) {
             log.error(IntelligentModelRoutingConstants.ERROR_CONFIG_PARSE_FAILED, e);
-            return false;
-        } catch (Exception e) {
-            log.error("Error during intelligent model routing", e);
-            return false;
+            messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, AIAPIConstants.REJECT_ENDPOINT);
+            return true;
         }
     }
 
@@ -108,9 +110,7 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
         IntelligentModelRoutingConfigDTO.DeploymentConfigDTO targetConfig = getTargetConfig(messageContext, policyConfig);
 
         if (targetConfig == null || targetConfig.getRoutingrules() == null) {
-            if (log.isDebugEnabled()) {
-                log.debug("IntelligentModelRouting policy is not set for " + apiKeyType + ", bypassing mediation.");
-            }
+            log.warn("IntelligentModelRouting policy is not set for " + apiKeyType + ", bypassing mediation.");
             return true;
         }
 
@@ -158,7 +158,9 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
                         ModelEndpointDTO endpoint = new ModelEndpointDTO();
                         endpoint.setModel(routeRule.getModel());
                         endpoint.setEndpointId(routeRule.getEndpointId());
-                        log.info("Selected route rule '" + routeRuleName + "' with model: " + routeRule.getModel());
+                        if (log.isDebugEnabled()) {
+                            log.debug("Selected route rule '" + routeRuleName + "' with model: " + routeRule.getModel());
+                        }
                         return endpoint;
                     }
                 }
@@ -166,7 +168,9 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
         }
 
         if (targetConfig.getDefaultModel() != null) {
-            log.info("Using default model: " + targetConfig.getDefaultModel().getModel());
+            if (log.isDebugEnabled()) {
+                log.debug("Using default model: " + targetConfig.getDefaultModel().getModel());
+            }
         }
         return targetConfig.getDefaultModel();
     }
@@ -182,25 +186,29 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
      *
      * @param config the configuration in JSON format
      * @return the parsed configuration object
-     * @throws IllegalStateException if parsing fails
+     * @throws APIManagementException if parsing fails
      */
     private IntelligentModelRoutingConfigDTO parseConfiguration(String config)
-            throws IllegalStateException {
+            throws APIManagementException {
 
         try {
             config = config.replace("&quot;", "\"");
             IntelligentModelRoutingConfigDTO endpoints = new Gson().fromJson(config, IntelligentModelRoutingConfigDTO.class);
             if (endpoints == null) {
-                throw new IllegalStateException(IntelligentModelRoutingConstants.ERROR_CONFIG_PARSE_FAILED + ": null config");
+                throw new APIManagementException(IntelligentModelRoutingConstants.ERROR_CONFIG_PARSE_FAILED + ": null config");
             }
             return endpoints;
         } catch (JsonSyntaxException e) {
-            throw new IllegalStateException(IntelligentModelRoutingConstants.ERROR_CONFIG_PARSE_FAILED, e);
+            throw new APIManagementException(IntelligentModelRoutingConstants.ERROR_CONFIG_PARSE_FAILED, e);
         }
     }
 
     /**
      * Retrieves the target configuration based on the API key type (production or sandbox).
+     *
+     * @param messageContext the message context
+     * @param policyConfig   the policy configuration
+     * @return the deployment configuration for the current environment
      */
     private IntelligentModelRoutingConfigDTO.DeploymentConfigDTO getTargetConfig(
             MessageContext messageContext, IntelligentModelRoutingConfigDTO policyConfig) {
@@ -216,6 +224,9 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
 
     /**
      * Sets the endpoint properties in the message context.
+     *
+     * @param messageContext   the message context
+     * @param selectedEndpoint the selected endpoint to set
      */
     private void setEndpointProperties(MessageContext messageContext, ModelEndpointDTO selectedEndpoint) {
 
@@ -227,15 +238,17 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
 
     /**
      * Extracts the user request content from the message payload using the configured JSON path.
+     *
+     * @param messageContext the message context containing the request payload
+     * @param policyConfig   the policy configuration containing the content path
+     * @return the extracted user request content, or empty string if not found
      */
     private String extractUserRequestContent(MessageContext messageContext,
                                              IntelligentModelRoutingConfigDTO policyConfig) {
 
         if (policyConfig.getContentPath() == null || StringUtils.isEmpty(policyConfig.getContentPath().getPath())) {
-            if (log.isDebugEnabled()) {
-                log.debug(IntelligentModelRoutingConstants.ERROR_CONTENT_PATH_NOT_CONFIGURED);
-            }
-            return IntelligentModelRoutingConstants.EMPTY_RESULT;
+            log.warn(IntelligentModelRoutingConstants.ERROR_CONTENT_PATH_NOT_CONFIGURED);
+            return StringUtils.EMPTY;
         }
 
         org.apache.axis2.context.MessageContext axis2MC =
@@ -246,21 +259,29 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             if (log.isDebugEnabled()) {
                 log.debug(IntelligentModelRoutingConstants.ERROR_EMPTY_PAYLOAD);
             }
-            return IntelligentModelRoutingConstants.EMPTY_RESULT;
+            return StringUtils.EMPTY;
         }
 
         String contentPath = policyConfig.getContentPath().getPath();
         try {
             Object result = JsonPath.read(jsonPayload, contentPath);
-            return result != null ? result.toString() : IntelligentModelRoutingConstants.EMPTY_RESULT;
-        } catch (Exception e) {
+            return result != null ? result.toString() : StringUtils.EMPTY;
+        } catch (PathNotFoundException e) {
             log.error(IntelligentModelRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + contentPath + "': " + e.getMessage());
-            return IntelligentModelRoutingConstants.EMPTY_RESULT;
+            return StringUtils.EMPTY;
+        } catch (InvalidPathException | InvalidJsonException e) {
+            log.error(IntelligentModelRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + contentPath + "': " + e.getMessage());
+            return StringUtils.EMPTY;
         }
     }
 
     /**
      * Classifies the user request using the LLM provider to determine the appropriate route rule.
+     *
+     * @param messageContext the message context containing the request
+     * @param policyConfig   the policy configuration
+     * @param targetConfig   the deployment configuration for the current environment
+     * @return the matched route rule name, or empty string if classification fails
      */
     private String classifyRequest(MessageContext messageContext, IntelligentModelRoutingConfigDTO policyConfig,
             IntelligentModelRoutingConfigDTO.DeploymentConfigDTO targetConfig) {
@@ -273,27 +294,31 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
                 if (log.isDebugEnabled()) {
                     log.debug("No route rules available or content is empty, using default route");
                 }
-                return IntelligentModelRoutingConstants.EMPTY_RESULT;
+                return StringUtils.EMPTY;
             }
 
             if (llmProvider == null) {
                 log.warn(IntelligentModelRoutingConstants.ERROR_LLM_PROVIDER_UNAVAILABLE);
-                return IntelligentModelRoutingConstants.EMPTY_RESULT;
+                return StringUtils.EMPTY;
             }
 
-            String systemPrompt = APIConstants.AI.CLASSIFICATION_SYSTEM_PROMPT;
+            String systemPrompt = IntelligentModelRoutingConstants.CLASSIFICATION_SYSTEM_PROMPT;
             String userPrompt = buildClassificationPrompt(targetConfig, content);
             String response = llmProvider.getChatCompletion(systemPrompt, userPrompt);
 
             return validateResponse(response, availableRouteRules);
-        } catch (Exception e) {
+        } catch (APIManagementException e) {
             log.error(IntelligentModelRoutingConstants.ERROR_CLASSIFICATION_FAILED, e);
-            return IntelligentModelRoutingConstants.EMPTY_RESULT;
+            return StringUtils.EMPTY;
         }
     }
 
     /**
      * Builds the classification prompt for the LLM with available route rules and user content.
+     *
+     * @param targetConfig the deployment configuration containing routing rules
+     * @param content      the user request content
+     * @return the formatted classification prompt
      */
     private String buildClassificationPrompt(IntelligentModelRoutingConfigDTO.DeploymentConfigDTO targetConfig, String content) {
 
@@ -325,7 +350,7 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             if (log.isDebugEnabled()) {
                 log.debug(IntelligentModelRoutingConstants.WARN_EMPTY_LLM_RESPONSE);
             }
-            return IntelligentModelRoutingConstants.EMPTY_RESULT;
+            return StringUtils.EMPTY;
         }
 
         String cleanResponse = response.trim();
@@ -334,18 +359,20 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             if (log.isDebugEnabled()) {
                 log.debug(IntelligentModelRoutingConstants.DEBUG_LLM_RETURNED_NONE);
             }
-            return IntelligentModelRoutingConstants.EMPTY_RESULT;
+            return StringUtils.EMPTY;
         }
 
         String matchedRule = findMatchingRouteRule(cleanResponse, availableRouteRules);
         if (matchedRule != null) {
-            log.info("Route rule matched: " + matchedRule);
+            if (log.isDebugEnabled()) {
+                log.debug("Route rule matched: " + matchedRule);
+            }
             return matchedRule;
         }
 
         log.warn(IntelligentModelRoutingConstants.WARN_NO_ROUTE_RULE_MATCHED + 
                 " LLM response: '" + cleanResponse + "', Available rules: " + availableRouteRules);
-        return IntelligentModelRoutingConstants.EMPTY_RESULT;
+        return StringUtils.EMPTY;
     }
 
     private String findMatchingRouteRule(String cleanResponse, Set<String> availableRouteRules) {
@@ -360,6 +387,9 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
 
     /**
      * Extracts the set of available route rule names from the routing rules.
+     *
+     * @param targetConfig the deployment configuration containing routing rules
+     * @return the set of valid route rule names
      */
     private Set<String> getAvailableRouteRules(IntelligentModelRoutingConfigDTO.DeploymentConfigDTO targetConfig) {
 
@@ -377,12 +407,14 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
 
     /**
      * Builds the classification prompt components from routing rules.
-     * Returns array: [0] = rule options with context, [1] = comma-separated names
+     *
+     * @param targetConfig the deployment configuration containing routing rules
+     * @return array where [0] = rule options with context, [1] = comma-separated names
      */
     private String[] buildPromptComponents(IntelligentModelRoutingConfigDTO.DeploymentConfigDTO targetConfig) {
 
         if (targetConfig == null || targetConfig.getRoutingrules() == null) {
-            return new String[]{IntelligentModelRoutingConstants.EMPTY_RESULT, IntelligentModelRoutingConstants.EMPTY_RESULT};
+            return new String[]{StringUtils.EMPTY, StringUtils.EMPTY};
         }
 
         StringBuilder options = new StringBuilder();
@@ -417,5 +449,3 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
 
     }
 }
-
-

@@ -20,7 +20,7 @@ package org.wso2.apim.policies.mediation.ai.semantic.routing;
  */
 public class SemanticRoutingConstants {
 
-    public static final String EMPTY_RESULT = "";
+    public static final double DEFAULT_SIMILARITY_THRESHOLD = 0.90;
 
     public static final String ERROR_CONFIG_PARSE_FAILED = "Failed to parse semantic routing configuration";
     public static final String ERROR_EMBEDDING_PROVIDER_UNAVAILABLE = "Embedding provider is not available";
@@ -29,6 +29,4 @@ public class SemanticRoutingConstants {
     public static final String ERROR_JSON_PATH_PARSE = "Error parsing JSON path";
     public static final String ERROR_EMBEDDING_COMPUTATION = "Failed to compute embeddings";
     public static final String ERROR_NO_ROUTE_FOUND = "No matching route found and no default configured";
-
-
 }

@@ -1,8 +1,8 @@
 {
   "category": "Mediation",
-  "name": "Intelligent Model Routing",
+  "name": "intelligentModelRouting",
   "version": "v1.0",
-  "displayName": "Intelligent Model Routing",
+  "displayName": "Intelligent model routing",
   "description": "This policy allows you to route traffic to different AI/LLM models based on LLM-powered classification of user requests into predefined route rules.",
   "policyAttributes": [
     {
