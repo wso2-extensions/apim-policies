@@ -70,7 +70,7 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
         }
         llmProvider = ServiceReferenceHolder.getInstance().getLLMProvider();
         if (llmProvider == null) {
-            throw new IllegalStateException(IntelligentModelRoutingConstants.ERROR_LLM_PROVIDER_UNAVAILABLE);
+            log.error(IntelligentModelRoutingConstants.ERROR_LLM_PROVIDER_UNAVAILABLE);
         }
     }
 
@@ -83,8 +83,16 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
     @Override
     public boolean mediate(MessageContext messageContext) {
 
+        if (log.isDebugEnabled()) {
+            log.debug("IntelligentModelRouting mediation started.");
+        }
+
         try {
             if (StringUtils.isEmpty(intelligentModelRoutingConfigs)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("No intelligent model routing configs, using default endpoint.");
+                }
+                messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, AIAPIConstants.DEFAULT_ENDPOINT);
                 return true;
             }
 
@@ -92,7 +100,7 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             return processRouting(messageContext, policyConfig);
         } catch (APIManagementException e) {
             log.error(IntelligentModelRoutingConstants.ERROR_CONFIG_PARSE_FAILED, e);
-            messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, AIAPIConstants.REJECT_ENDPOINT);
+            messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, AIAPIConstants.DEFAULT_ENDPOINT);
             return true;
         }
     }
@@ -110,7 +118,10 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
         IntelligentModelRoutingConfigDTO.DeploymentConfigDTO targetConfig = getTargetConfig(messageContext, policyConfig);
 
         if (targetConfig == null || targetConfig.getRoutingrules() == null) {
-            log.warn("IntelligentModelRouting policy is not set for " + apiKeyType + ", bypassing mediation.");
+            if (log.isDebugEnabled()) {
+                log.debug("No intelligent model routing config for " + apiKeyType + ", using default endpoint.");
+            }
+            messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, AIAPIConstants.DEFAULT_ENDPOINT);
             return true;
         }
 
@@ -121,9 +132,9 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             setEndpointProperties(messageContext, selectedEndpoint);
         } else {
             if (log.isDebugEnabled()) {
-                log.debug(IntelligentModelRoutingConstants.ERROR_NO_ROUTE_FOUND);
+                log.debug(IntelligentModelRoutingConstants.ERROR_NO_ROUTE_FOUND + ", using default endpoint.");
             }
-            messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, AIAPIConstants.REJECT_ENDPOINT);
+            messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, AIAPIConstants.DEFAULT_ENDPOINT);
         }
         return true;
     }
@@ -247,7 +258,9 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
                                              IntelligentModelRoutingConfigDTO policyConfig) {
 
         if (policyConfig.getContentPath() == null || StringUtils.isEmpty(policyConfig.getContentPath().getPath())) {
-            log.warn(IntelligentModelRoutingConstants.ERROR_CONTENT_PATH_NOT_CONFIGURED);
+            if (log.isDebugEnabled()) {
+                log.debug(IntelligentModelRoutingConstants.ERROR_CONTENT_PATH_NOT_CONFIGURED);
+            }
             return StringUtils.EMPTY;
         }
 
@@ -267,10 +280,14 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             Object result = JsonPath.read(jsonPayload, contentPath);
             return result != null ? result.toString() : StringUtils.EMPTY;
         } catch (PathNotFoundException e) {
-            log.error(IntelligentModelRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + contentPath + "': " + e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug(IntelligentModelRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + contentPath + "': " + e.getMessage());
+            }
             return StringUtils.EMPTY;
         } catch (InvalidPathException | InvalidJsonException e) {
-            log.error(IntelligentModelRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + contentPath + "': " + e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug(IntelligentModelRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + contentPath + "': " + e.getMessage());
+            }
             return StringUtils.EMPTY;
         }
     }
@@ -298,7 +315,9 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             }
 
             if (llmProvider == null) {
-                log.warn(IntelligentModelRoutingConstants.ERROR_LLM_PROVIDER_UNAVAILABLE);
+                if (log.isDebugEnabled()) {
+                    log.debug(IntelligentModelRoutingConstants.ERROR_LLM_PROVIDER_UNAVAILABLE + ", using default route.");
+                }
                 return StringUtils.EMPTY;
             }
 
@@ -370,8 +389,10 @@ public class IntelligentModelRouting extends AbstractMediator implements Managed
             return matchedRule;
         }
 
-        log.warn(IntelligentModelRoutingConstants.WARN_NO_ROUTE_RULE_MATCHED + 
-                " LLM response: '" + cleanResponse + "', Available rules: " + availableRouteRules);
+        if (log.isDebugEnabled()) {
+            log.debug(IntelligentModelRoutingConstants.WARN_NO_ROUTE_RULE_MATCHED + 
+                    " LLM response: '" + cleanResponse + "', Available rules: " + availableRouteRules);
+        }
         return StringUtils.EMPTY;
     }
 

@@ -1,8 +1,8 @@
 {
   "category": "Mediation",
-  "name": "semanticRouting",
+  "name": "SemanticRouting",
   "version": "v1.0",
-  "displayName": "Semantic model routing",
+  "displayName": "Semantic Model Routing",
   "description": "This policy allows you to route traffic to different AI/LLM models based on the semantic similarity between user requests and predefined utterances.",
   "policyAttributes": [
     {
@@ -18,8 +18,7 @@
     "request"
   ],
   "supportedGateways": [
-    "Synapse",
-    "ChoreoConnect"
+    "Synapse"
   ],
   "supportedApiTypes": [
     {

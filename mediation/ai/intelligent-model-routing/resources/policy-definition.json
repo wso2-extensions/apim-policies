@@ -1,8 +1,8 @@
 {
   "category": "Mediation",
-  "name": "intelligentModelRouting",
+  "name": "IntelligentModelRouting",
   "version": "v1.0",
-  "displayName": "Intelligent model routing",
+  "displayName": "Intelligent Model Routing",
   "description": "This policy allows you to route traffic to different AI/LLM models based on LLM-powered classification of user requests into predefined route rules.",
   "policyAttributes": [
     {
@@ -18,8 +18,7 @@
     "request"
   ],
   "supportedGateways": [
-    "Synapse",
-    "ChoreoConnect"
+    "Synapse"
   ],
   "supportedApiTypes": [
     {
