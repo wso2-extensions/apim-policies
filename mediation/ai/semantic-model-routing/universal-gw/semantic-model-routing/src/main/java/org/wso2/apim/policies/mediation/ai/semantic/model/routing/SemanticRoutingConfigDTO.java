@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and limitations under the License.
  */
 
-package org.wso2.apim.policies.mediation.ai.semantic.routing;
+package org.wso2.apim.policies.mediation.ai.semantic.model.routing;
 
 import org.wso2.carbon.apimgt.api.gateway.ModelEndpointDTO;
 

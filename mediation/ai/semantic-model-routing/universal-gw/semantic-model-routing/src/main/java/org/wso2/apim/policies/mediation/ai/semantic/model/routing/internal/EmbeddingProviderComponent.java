@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.apim.policies.mediation.ai.semantic.routing.internal;
+package org.wso2.apim.policies.mediation.ai.semantic.model.routing.internal;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -25,7 +25,7 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.apimgt.api.EmbeddingProviderService;
 
 @Component(
-        name = "org.wso2.apim.policies.mediation.ai.semantic.routing.internal.EmbeddingProviderComponent",
+        name = "org.wso2.apim.policies.mediation.ai.semantic.model.routing.internal.EmbeddingProviderComponent",
         immediate = true
 )
 public class EmbeddingProviderComponent {

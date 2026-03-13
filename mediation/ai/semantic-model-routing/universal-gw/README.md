@@ -1,6 +1,6 @@
-# Semantic Routing Mediator for WSO2 API Manager Universal Gateway
+# Semantic Model Routing Mediator for WSO2 API Manager Universal Gateway
 
-The **Semantic Routing** is a custom Synapse mediator for **WSO2 API Manager Universal Gateway**, designed to perform **embedding-based routing** for AI API requests. Unlike traditional routing that relies on exact keyword matching or rule-based logic, Semantic Routing uses vector embeddings to understand the intent and context of requests, ensuring they are routed to the most appropriate AI model.
+The **Semantic Model Routing** is a custom Synapse mediator for **WSO2 API Manager Universal Gateway**, designed to perform **embedding-based routing** for AI API requests. Unlike traditional routing that relies on exact keyword matching or rule-based logic, Semantic Model Routing uses vector embeddings to understand the intent and context of requests, ensuring they are routed to the most appropriate AI model.
 
 ---
 
@@ -38,7 +38,7 @@ mvn clean install
 
 ## Embedding Provider Configuration
 
-Before using the Semantic Routing policy, you must configure an embedding provider in the `deployment.toml` file.
+Before using the Semantic Model Routing policy, you must configure an embedding provider in the `deployment.toml` file.
 
 Choose one of the following embedding providers and add the configuration to your `<APIM_HOME>/repository/conf/deployment.toml` file:
 
@@ -78,7 +78,7 @@ embedding_model = "<openai-embedding-model>"
 
 ## How It Works
 
-Semantic Routing operates through the following process:
+Semantic Model Routing operates through the following process:
 
 1. **Initialization**: When the policy is configured, it precomputes embeddings for all predefined utterances associated with each route.
 2. **Request Processing**: When a user request arrives, the policy extracts the relevant content using a JSONPath expression.
@@ -87,9 +87,9 @@ Semantic Routing operates through the following process:
 5. **Route Selection**: The route with the highest similarity score is selected if it meets the configured threshold.
 6. **Fallback**: If no route meets the criteria, the request is routed to the default model.
 
-> **Tip — When to use Semantic Routing vs Intelligent Model Routing**
+> **Tip — When to use Semantic Model Routing vs Intelligent Model Routing**
 >
-> Semantic Routing works best when users send **full sentences or phrases** that express a clear intent (e.g., *"What is the weather forecast for tomorrow?"*). It relies on vector similarity between the user's query and the utterances you provide, so very short inputs like single words or 2-word phrases (e.g., *"weather"*, *"rain forecast"*) may not produce reliable similarity scores.
+> Semantic Model Routing works best when users send **full sentences or phrases** that express a clear intent (e.g., *"What is the weather forecast for tomorrow?"*). It relies on vector similarity between the user's query and the utterances you provide, so very short inputs like single words or 2-word phrases (e.g., *"weather"*, *"rain forecast"*) may not produce reliable similarity scores.
 >
 > If your users tend to send short keyword-style queries, consider using **Intelligent Model Routing** instead, which uses an LLM to classify requests based on contextual descriptions rather than embedding similarity.
 
@@ -97,20 +97,20 @@ Semantic Routing operates through the following process:
 
 ## How to Use
 
-Follow these steps to integrate the Semantic Routing policy into your WSO2 API Manager instance:
+Follow these steps to integrate the Semantic Model Routing policy into your WSO2 API Manager instance:
 
 1. **Unzip the Build Artifact**
    After the build, unzip the artifact generated in the `target/` directory:
 
    ```bash
-   unzip target/org.wso2.am.policies.mediation.ai.semantic-routing-<version>-distribution.zip -d semantic-routing
+   unzip target/org.wso2.am.policies.mediation.ai.semantic-model-routing-<version>-distribution.zip -d semantic-model-routing
    ```
 
 2. **Copy the Mediator JAR**
    Place the mediator JAR into your API Manager's runtime libraries:
 
    ```bash
-   cp semantic-routing/org.wso2.am.policies.mediation.ai.semantic-routing-<version>.jar $APIM_HOME/repository/components/lib/
+   cp semantic-model-routing/org.wso2.am.policies.mediation.ai.semantic-model-routing-<version>.jar $APIM_HOME/repository/components/lib/
    ```
 
 3. **Register the Policy in Publisher**
@@ -122,12 +122,12 @@ Follow these steps to integrate the Semantic Routing policy into your WSO2 API M
     - Open the **API Publisher**
     - Select your API
     - Go to **Runtime > Request Flow**
-    - Click **Add Policy**, select the new **Semantic Routing** policy
+    - Click **Add Policy**, select the new **Semantic Model Routing** policy
     - Provide the required configuration
     - **Save and Deploy** the API
 
 > **Note — AWS Bedrock Configuration**
-> When configuring semantic routing with AWS Bedrock as a multi-model provider service, you must select both the **Provider** (model family) and the **Model** for each route and the default model. The **Provider** dropdown lists the model families you have set up in the Admin Portal (such as Meta, Anthropic, DeepSeek, etc.), and once a provider is selected, the **Model** dropdown will display the specific models available under that provider.
+> When configuring semantic model routing with AWS Bedrock as a multi-model provider service, you must select both the **Provider** (model family) and the **Model** for each route and the default model. The **Provider** dropdown lists the model families you have set up in the Admin Portal (such as Meta, Anthropic, DeepSeek, etc.), and once a provider is selected, the **Model** dropdown will display the specific models available under that provider.
 
 ---
 
@@ -176,7 +176,7 @@ The score threshold determines the minimum cosine similarity (0.0 to 1.0) requir
 ## Example Policy Configuration
 
 1. Create an AI API with multiple model endpoints configured.
-2. Add the Semantic Routing policy to the API with the following configuration:
+2. Add the Semantic Model Routing policy to the API with the following configuration:
 
 | Field | Example |
 |-------|---------|
@@ -202,7 +202,7 @@ The score threshold determines the minimum cosine similarity (0.0 to 1.0) requir
 - **Endpoint**: `gpt-4o`
 
 3. Save and deploy the API.
-4. Test the semantic routing with different queries:
+4. Test the semantic model routing with different queries:
 
 **Request 1 (Routes to Weather Information)**:
 ```json

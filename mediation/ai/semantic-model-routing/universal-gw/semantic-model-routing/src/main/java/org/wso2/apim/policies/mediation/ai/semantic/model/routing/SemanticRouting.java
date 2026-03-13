@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and limitations under the License.
  */
 
-package org.wso2.apim.policies.mediation.ai.semantic.routing;
+package org.wso2.apim.policies.mediation.ai.semantic.model.routing;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -30,7 +30,7 @@ import org.apache.synapse.commons.json.JsonUtil;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.mediators.AbstractMediator;
-import org.wso2.apim.policies.mediation.ai.semantic.routing.internal.ServiceReferenceHolder;
+import org.wso2.apim.policies.mediation.ai.semantic.model.routing.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.api.APIConstants.AIAPIConstants;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.EmbeddingProviderService;
