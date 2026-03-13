@@ -19,7 +19,7 @@ import org.wso2.carbon.apimgt.api.gateway.ModelEndpointDTO;
 
 import java.util.List;
 
-public class SemanticModelRoutingConfigDTO {
+public class SemanticRoutingConfigDTO {
 
     private EnvironmentConfig production;
 
