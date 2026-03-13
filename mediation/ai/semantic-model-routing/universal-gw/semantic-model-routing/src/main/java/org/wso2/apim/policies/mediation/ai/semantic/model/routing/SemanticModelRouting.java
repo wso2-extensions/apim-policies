@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and limitations under the License.
  */
 
-package org.wso2.apim.policies.mediation.ai.semantic.routing;
+package org.wso2.apim.policies.mediation.ai.semantic.model.routing;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -30,7 +30,7 @@ import org.apache.synapse.commons.json.JsonUtil;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.mediators.AbstractMediator;
-import org.wso2.apim.policies.mediation.ai.semantic.routing.internal.ServiceReferenceHolder;
+import org.wso2.apim.policies.mediation.ai.semantic.model.routing.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.api.APIConstants.AIAPIConstants;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.EmbeddingProviderService;
@@ -42,15 +42,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Mediator for AI API Semantic Routing.
+ * Mediator for AI API Semantic Model Routing.
  */
-public class SemanticRouting extends AbstractMediator implements ManagedLifecycle {
+public class SemanticModelRouting extends AbstractMediator implements ManagedLifecycle {
 
-    private static final Log log = LogFactory.getLog(SemanticRouting.class);
+    private static final Log log = LogFactory.getLog(SemanticModelRouting.class);
 
-    private String semanticRoutingConfigs;
+    private String semanticModelRoutingConfigs;
     private EmbeddingProviderService embeddingProvider;
-    private SemanticRoutingConfigDTO routingConfig;
+    private SemanticModelRoutingConfigDTO routingConfig;
 
     /**
      * Initializes the mediator by loading the embedding provider and routing configuration.
@@ -61,18 +61,18 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
     public void init(SynapseEnvironment synapseEnvironment) {
 
         if (log.isDebugEnabled()) {
-            log.debug("Initializing SemanticRouting mediator.");
+            log.debug("Initializing SemanticModelRouting mediator.");
         }
         embeddingProvider = ServiceReferenceHolder.getInstance().getEmbeddingProvider();
         if (embeddingProvider == null) {
-            log.error(SemanticRoutingConstants.ERROR_EMBEDDING_PROVIDER_UNAVAILABLE);
+            log.error(SemanticModelRoutingConstants.ERROR_EMBEDDING_PROVIDER_UNAVAILABLE);
             return;
         }
-        loadRoutingConfiguration(semanticRoutingConfigs);
+        loadRoutingConfiguration(semanticModelRoutingConfigs);
     }
 
     /**
-     * Parses and loads the semantic routing configuration from JSON.
+     * Parses and loads the semantic model routing configuration from JSON.
      *
      * @param configJson the routing configuration in JSON format
      */
@@ -80,28 +80,28 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
 
         try {
             configJson = configJson.replace("&quot;", "\"");
-            this.routingConfig = new Gson().fromJson(configJson, SemanticRoutingConfigDTO.class);
+            this.routingConfig = new Gson().fromJson(configJson, SemanticModelRoutingConfigDTO.class);
             if (routingConfig == null) {
-                log.error(SemanticRoutingConstants.ERROR_CONFIG_PARSE_FAILED + ": null config");
+                log.error(SemanticModelRoutingConstants.ERROR_CONFIG_PARSE_FAILED + ": null config");
                 return;
             }
 
             if (routingConfig.getProduction() != null && routingConfig.getProduction().getRoutes() != null) {
-                for (SemanticRoutingConfigDTO.RouteConfig route : routingConfig.getProduction().getRoutes()) {
+                for (SemanticModelRoutingConfigDTO.RouteConfig route : routingConfig.getProduction().getRoutes()) {
                     initializeRouteConfig(route);
                 }
             }
             if (routingConfig.getSandbox() != null && routingConfig.getSandbox().getRoutes() != null) {
-                for (SemanticRoutingConfigDTO.RouteConfig route : routingConfig.getSandbox().getRoutes()) {
+                for (SemanticModelRoutingConfigDTO.RouteConfig route : routingConfig.getSandbox().getRoutes()) {
                     initializeRouteConfig(route);
                 }
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("Semantic routing configuration loaded successfully.");
+                log.debug("Semantic model routing configuration loaded successfully.");
             }
         } catch (JsonSyntaxException e) {
-            log.error(SemanticRoutingConstants.ERROR_CONFIG_PARSE_FAILED, e);
+            log.error(SemanticModelRoutingConstants.ERROR_CONFIG_PARSE_FAILED, e);
         }
     }
 
@@ -110,7 +110,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
      *
      * @param route the route configuration to initialize
      */
-    private void initializeRouteConfig(SemanticRoutingConfigDTO.RouteConfig route) {
+    private void initializeRouteConfig(SemanticModelRoutingConfigDTO.RouteConfig route) {
 
         if (!StringUtils.isEmpty(route.getModel()) && !StringUtils.isEmpty(route.getEndpointId())) {
             ModelEndpointDTO endpoint = new ModelEndpointDTO();
@@ -119,7 +119,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
             route.setEndpoint(endpoint);
         }
 
-        double threshold = SemanticRoutingConstants.DEFAULT_SIMILARITY_THRESHOLD;
+        double threshold = SemanticModelRoutingConstants.DEFAULT_SIMILARITY_THRESHOLD;
         if (!StringUtils.isEmpty(route.getScorethreshold())) {
             try {
                 double parsedThreshold = Double.parseDouble(route.getScorethreshold());
@@ -129,7 +129,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
             } catch (NumberFormatException e) {
                 if (log.isDebugEnabled()) {
                     log.debug("Invalid score threshold value: " + route.getScorethreshold() + ", using default: " +
-                            SemanticRoutingConstants.DEFAULT_SIMILARITY_THRESHOLD);
+                            SemanticModelRoutingConstants.DEFAULT_SIMILARITY_THRESHOLD);
                 }
             }
         }
@@ -143,7 +143,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
      *
      * @param route the route configuration containing utterances
      */
-    private void precomputeEmbeddings(SemanticRoutingConfigDTO.RouteConfig route) {
+    private void precomputeEmbeddings(SemanticModelRoutingConfigDTO.RouteConfig route) {
 
         List<String> utterances = route.getUtterances();
         if (utterances == null || utterances.isEmpty()) {
@@ -180,31 +180,31 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
     public boolean mediate(MessageContext messageContext) {
 
         if (log.isDebugEnabled()) {
-            log.debug("Starting semantic routing mediation.");
+            log.debug("Starting semantic model routing mediation.");
         }
 
         try {
             if (routingConfig == null || embeddingProvider == null) {
                 if (log.isDebugEnabled()) {
-                    log.debug("SemanticRouting mediator is not properly initialized, using default endpoint.");
+                    log.debug("SemanticModelRouting mediator is not properly initialized, using default endpoint.");
                 }
                 messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, AIAPIConstants.DEFAULT_ENDPOINT);
                 return true;
             }
 
             String apiKeyType = (String) messageContext.getProperty(APIConstants.API_KEY_TYPE);
-            SemanticRoutingConfigDTO.EnvironmentConfig environmentConfig = APIConstants.API_KEY_TYPE_PRODUCTION.equals(
+            SemanticModelRoutingConfigDTO.EnvironmentConfig environmentConfig = APIConstants.API_KEY_TYPE_PRODUCTION.equals(
                     apiKeyType) ? routingConfig.getProduction() : routingConfig.getSandbox();
 
             if (environmentConfig == null) {
                 if (log.isDebugEnabled()) {
-                    log.debug("No semantic routing config for " + apiKeyType + ", using default endpoint.");
+                    log.debug("No semantic model routing config for " + apiKeyType + ", using default endpoint.");
                 }
                 messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, AIAPIConstants.DEFAULT_ENDPOINT);
                 return true;
             }
 
-            List<SemanticRoutingConfigDTO.RouteConfig> routes = environmentConfig.getRoutes();
+            List<SemanticModelRoutingConfigDTO.RouteConfig> routes = environmentConfig.getRoutes();
             String userRequestContent = extractUserRequest(messageContext);
             if (StringUtils.isEmpty(userRequestContent)) {
                 if (log.isDebugEnabled()) {
@@ -220,7 +220,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
             double[] requestEmbedding = embeddingProvider.getEmbedding(userRequestContent);
             if (requestEmbedding == null) {
                 if (log.isDebugEnabled()) {
-                    log.debug(SemanticRoutingConstants.ERROR_EMBEDDING_COMPUTATION + ", routing to default.");
+                    log.debug(SemanticModelRoutingConstants.ERROR_EMBEDDING_COMPUTATION + ", routing to default.");
                 }
                 return routeToDefault(messageContext, environmentConfig);
             }
@@ -232,7 +232,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
                 return routeToDefault(messageContext, environmentConfig);
             }
         } catch (APIManagementException e) {
-            log.error(SemanticRoutingConstants.ERROR_EMBEDDING_COMPUTATION, e);
+            log.error(SemanticModelRoutingConstants.ERROR_EMBEDDING_COMPUTATION, e);
             messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, AIAPIConstants.DEFAULT_ENDPOINT);
             return true;
         }
@@ -241,7 +241,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
 
     private static class RouteMatch {
 
-        SemanticRoutingConfigDTO.RouteConfig route;
+        SemanticModelRoutingConfigDTO.RouteConfig route;
         double score;
     }
 
@@ -252,11 +252,11 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
      * @param requestEmbedding the embedding vector of the user request
      * @return the best matching route with its similarity score
      */
-    private RouteMatch findBestRoute(List<SemanticRoutingConfigDTO.RouteConfig> routes, double[] requestEmbedding) {
+    private RouteMatch findBestRoute(List<SemanticModelRoutingConfigDTO.RouteConfig> routes, double[] requestEmbedding) {
 
         RouteMatch bestMatch = new RouteMatch();
 
-        for (SemanticRoutingConfigDTO.RouteConfig route : routes) {
+        for (SemanticModelRoutingConfigDTO.RouteConfig route : routes) {
             double[][] utteranceEmbeddings = route.getUtteranceEmbeddings();
             if (utteranceEmbeddings == null || utteranceEmbeddings.length == 0) {
                 if (log.isDebugEnabled()) {
@@ -362,17 +362,17 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
      * @return true to continue mediation
      */
     private boolean routeToDefault(MessageContext messageContext,
-            SemanticRoutingConfigDTO.EnvironmentConfig environmentConfig) {
+            SemanticModelRoutingConfigDTO.EnvironmentConfig environmentConfig) {
 
         if (environmentConfig == null || environmentConfig.getDefaultModel() == null) {
             if (log.isDebugEnabled()) {
-                log.debug(SemanticRoutingConstants.ERROR_NO_ROUTE_FOUND + ", using default endpoint.");
+                log.debug(SemanticModelRoutingConstants.ERROR_NO_ROUTE_FOUND + ", using default endpoint.");
             }
             messageContext.setProperty(AIAPIConstants.TARGET_ENDPOINT, AIAPIConstants.DEFAULT_ENDPOINT);
             return true;
         }
 
-        SemanticRoutingConfigDTO.DefaultConfig defaultModelConfig = environmentConfig.getDefaultModel();
+        SemanticModelRoutingConfigDTO.DefaultConfig defaultModelConfig = environmentConfig.getDefaultModel();
         if (StringUtils.isEmpty(defaultModelConfig.getEndpointId())) {
             if (log.isDebugEnabled()) {
                 log.debug("Default model endpoint ID is empty, using default endpoint.");
@@ -407,7 +407,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
 
         if (routingConfig.getPath() == null || StringUtils.isEmpty(routingConfig.getPath().getContentpath())) {
             if (log.isDebugEnabled()) {
-                log.debug(SemanticRoutingConstants.ERROR_CONTENT_PATH_NOT_CONFIGURED);
+                log.debug(SemanticModelRoutingConstants.ERROR_CONTENT_PATH_NOT_CONFIGURED);
             }
             return StringUtils.EMPTY;
         }
@@ -417,7 +417,7 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
 
         if (StringUtils.isEmpty(requestPayload)) {
             if (log.isDebugEnabled()) {
-                log.debug(SemanticRoutingConstants.ERROR_EMPTY_PAYLOAD);
+                log.debug(SemanticModelRoutingConstants.ERROR_EMPTY_PAYLOAD);
             }
             return StringUtils.EMPTY;
         }
@@ -428,12 +428,12 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
             return result != null ? result.toString() : StringUtils.EMPTY;
         } catch (PathNotFoundException e) {
             if (log.isDebugEnabled()) {
-                log.debug(SemanticRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + jsonPath + "': " + e.getMessage());
+                log.debug(SemanticModelRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + jsonPath + "': " + e.getMessage());
             }
             return StringUtils.EMPTY;
         } catch (InvalidPathException | InvalidJsonException e) {
             if (log.isDebugEnabled()) {
-                log.debug(SemanticRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + jsonPath + "': " + e.getMessage());
+                log.debug(SemanticModelRoutingConstants.ERROR_JSON_PATH_PARSE + " '" + jsonPath + "': " + e.getMessage());
             }
             return StringUtils.EMPTY;
         }
@@ -445,13 +445,13 @@ public class SemanticRouting extends AbstractMediator implements ManagedLifecycl
         return true;
     }
 
-    public String getSemanticRoutingConfigs() {
+    public String getSemanticModelRoutingConfigs() {
 
-        return semanticRoutingConfigs;
+        return semanticModelRoutingConfigs;
     }
 
-    public void setSemanticRoutingConfigs(String semanticRoutingConfigs) {
+    public void setSemanticModelRoutingConfigs(String semanticModelRoutingConfigs) {
 
-        this.semanticRoutingConfigs = semanticRoutingConfigs;
+        this.semanticModelRoutingConfigs = semanticModelRoutingConfigs;
     }
 }

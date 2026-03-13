@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and limitations under the License.
  */
 
-package org.wso2.apim.policies.mediation.ai.semantic.routing;
+package org.wso2.apim.policies.mediation.ai.semantic.model.routing;
 
 /**
- * Constants for Semantic Routing policy.
+ * Constants for Semantic Model Routing policy.
  */
-public class SemanticRoutingConstants {
+public class SemanticModelRoutingConstants {
 
     public static final double DEFAULT_SIMILARITY_THRESHOLD = 0.90;
 
-    public static final String ERROR_CONFIG_PARSE_FAILED = "Failed to parse semantic routing configuration";
+    public static final String ERROR_CONFIG_PARSE_FAILED = "Failed to parse semantic model routing configuration";
     public static final String ERROR_EMBEDDING_PROVIDER_UNAVAILABLE = "Embedding provider is not available";
     public static final String ERROR_CONTENT_PATH_NOT_CONFIGURED = "Content path is not configured or empty";
     public static final String ERROR_EMPTY_PAYLOAD = "Request payload is empty";

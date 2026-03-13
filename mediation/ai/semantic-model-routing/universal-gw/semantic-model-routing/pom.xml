@@ -19,10 +19,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.wso2.am.policies</groupId>
-    <artifactId>org.wso2.am.policies.mediation.ai.semantic-routing</artifactId>
+    <artifactId>org.wso2.am.policies.mediation.ai.semantic-model-routing</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
-    <name>WSO2 APIM Mediation Policies - Semantic Routing</name>
+    <name>WSO2 APIM Mediation Policies - Semantic Model Routing</name>
 
     <scm>
         <connection>scm:git:https://github.com/wso2-extensions/apim-policies.git</connection>
@@ -137,10 +137,10 @@
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Name>${project.artifactId}</Bundle-Name>
                         <Private-Package>
-                            org.wso2.apim.policies.mediation.ai.semantic.routing.internal.*
+                            org.wso2.apim.policies.mediation.ai.semantic.model.routing.internal.*
                         </Private-Package>
                         <Export-Package>
-                            org.wso2.apim.policies.mediation.ai.semantic.routing;version="${project.version}",
+                            org.wso2.apim.policies.mediation.ai.semantic.model.routing;version="${project.version}",
                         </Export-Package>
                         <Import-Package>
                             !com.jayway.jsonpath.*,
