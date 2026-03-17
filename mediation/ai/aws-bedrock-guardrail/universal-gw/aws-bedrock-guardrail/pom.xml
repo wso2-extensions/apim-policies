@@ -49,18 +49,18 @@
     </distributionManagement>
 
     <properties>
-        <maven.compiler.release>9</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <org.apache.felix.version>3.3.0</org.apache.felix.version>
-        <synapse.version>4.0.0-wso2v131</synapse.version>
+        <synapse.version>4.1.0-wso2v28</synapse.version>
         <jackson.version>2.13.5</jackson.version>
         <com.jayway.jsonpath.version>2.9.0.wso2v1</com.jayway.jsonpath.version>
         <httpclient.version>5.5</httpclient.version>
         <json.orbit.version>3.0.0.wso2v6</json.orbit.version>
         <import.package.version.commons.logging>[1.2.0,2.0.0)</import.package.version.commons.logging>
         <axis2.osgi.version.range>[1.6.1, 1.7.0)</axis2.osgi.version.range>
-        <carbon.apimgt.version>9.31.158</carbon.apimgt.version>
+        <carbon.apimgt.version>9.33.56</carbon.apimgt.version>
     </properties>
 
     <dependencies>
