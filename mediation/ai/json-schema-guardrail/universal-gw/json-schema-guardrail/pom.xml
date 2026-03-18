@@ -49,7 +49,7 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-        <org.apache.felix.version>3.3.0</org.apache.felix.version>
+        <org.apache.felix.version>5.1.9</org.apache.felix.version>
         <synapse.version>4.1.0-wso2v28</synapse.version>
         <commons-lang3.version>3.13.0</commons-lang3.version>
         <jackson.version>2.19.0</jackson.version>
