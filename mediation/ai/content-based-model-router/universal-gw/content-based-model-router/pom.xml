@@ -65,6 +65,7 @@
         <import.package.version.commons.logging>[1.2.0,2.0.0)</import.package.version.commons.logging>
         <axis2.osgi.version.range>[1.6.1, 1.7.0)</axis2.osgi.version.range>
         <carbon.apimgt.version>9.33.56</carbon.apimgt.version>
+        <nexus.staging.plugin.version>1.6.13</nexus.staging.plugin.version>
     </properties>
 
     <dependencies>
@@ -213,6 +214,17 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>${nexus.staging.plugin.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>nexus-releases</serverId>
+                    <nexusUrl>https://maven.wso2.org/nexus/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
             </plugin>
         </plugins>
     </build>
