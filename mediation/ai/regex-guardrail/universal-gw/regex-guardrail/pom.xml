@@ -52,6 +52,7 @@
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <org.apache.felix.version>5.1.9</org.apache.felix.version>
         <synapse.version>4.1.0-wso2v28</synapse.version>
+        <nexus.staging.plugin.version>1.6.13</nexus.staging.plugin.version>
         <jackson.version>2.19.0</jackson.version>
         <com.jayway.jsonpath.version>2.9.0.wso2v1</com.jayway.jsonpath.version>
         <json.orbit.version>3.0.0.wso2v6</json.orbit.version>
@@ -160,6 +161,17 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>${nexus.staging.plugin.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>nexus-releases</serverId>
+                    <nexusUrl>https://maven.wso2.org/nexus/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
             </plugin>
         </plugins>
     </build>
