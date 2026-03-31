@@ -84,6 +84,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
     private boolean toolsIsJson = SemanticToolFilteringConstants.DEFAULT_TOOLS_IS_JSON;
 
     private EmbeddingProviderService embeddingProvider;
+    private ToolsPathSpec parsedToolsPathSpec;
 
     // ---------- Lifecycle ----------
 
@@ -136,6 +137,13 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
                     + ". Only simple dotted paths with optional array indices or a single "
                     + "iterator wildcard are supported (e.g., '$.tools', '$.data.items', "
                     + "'$.results[0].tools', '$.tools[*].function').");
+        } else if (toolsIsJson) {
+            parsedToolsPathSpec = validateAndParseToolsJSONPath(toolsJSONPath);
+            if (parsedToolsPathSpec == null) {
+                log.error("Invalid toolsJSONPath: " + toolsJSONPath
+                        + ". The iterator wildcard must terminate a path segment before an optional "
+                        + "nested object path (e.g., '$.tools[*].function').");
+            }
         }
 
         if (logger.isDebugEnabled()) {
@@ -219,7 +227,14 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         // Parse as JSON object using Gson
         JsonObject requestBody = JsonParser.parseString(jsonContent).getAsJsonObject();
 
-        ToolsPathSpec toolsPathSpec = parseToolsJSONPath(toolsJSONPath);
+        if (parsedToolsPathSpec == null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Validated toolsJSONPath is unavailable - skipping tool filtering.");
+            }
+            return true;
+        }
+
+        ToolsPathSpec toolsPathSpec = parsedToolsPathSpec;
         JsonElement toolsElement = readAtPath(requestBody, toolsPathSpec.getArrayPath());
         JsonArray toolsArray = (toolsElement != null && toolsElement.isJsonArray())
                 ? toolsElement.getAsJsonArray() : null;
@@ -478,7 +493,11 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         if (toolsIsJson) {
             // Tools in JSON format - parse with Gson
             JsonObject requestBody = JsonParser.parseString(content).getAsJsonObject();
-            ToolsPathSpec toolsPathSpec = parseToolsJSONPath(toolsJSONPath);
+            if (parsedToolsPathSpec == null) {
+                return true;
+            }
+
+            ToolsPathSpec toolsPathSpec = parsedToolsPathSpec;
             JsonElement toolsElement = readAtPath(requestBody, toolsPathSpec.getArrayPath());
             JsonArray toolsArray = (toolsElement != null && toolsElement.isJsonArray())
                     ? toolsElement.getAsJsonArray() : null;
@@ -750,9 +769,9 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         return current;
     }
 
-    private ToolsPathSpec parseToolsJSONPath(String path) {
+    private ToolsPathSpec validateAndParseToolsJSONPath(String path) {
         if (!isValidSimpleJSONPath(path)) {
-            throw new IllegalArgumentException("Invalid tools path: " + path);
+            return null;
         }
 
         int wildcardIdx = path.indexOf("[*]");
@@ -766,7 +785,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
             return new ToolsPathSpec(arrayPath, null);
         }
         if (!suffix.startsWith(".")) {
-            throw new IllegalArgumentException("Invalid tools path after iterator wildcard: " + path);
+            return null;
         }
 
         return new ToolsPathSpec(arrayPath, suffix.substring(1));
