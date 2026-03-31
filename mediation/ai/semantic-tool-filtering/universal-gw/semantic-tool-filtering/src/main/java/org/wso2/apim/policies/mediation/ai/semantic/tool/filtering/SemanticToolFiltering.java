@@ -67,11 +67,11 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
     private static final Log logger = LogFactory.getLog(SemanticToolFiltering.class);
 
     /**
-     * Regex pattern to validate simple JSONPath expressions.
-     * Supports patterns like: $.tools, $.data.items, $.results[0].tools, $.messages[-1].content
+     * Regex pattern to validate a single JSONPath segment with an optional array index
+     * or a single wildcard iterator marker.
      */
-    private static final Pattern SIMPLE_JSON_PATH_PATTERN = Pattern.compile(
-            "^\\$\\.([a-zA-Z_][a-zA-Z0-9_]*(\\[-?\\d+\\])?\\.)*[a-zA-Z_][a-zA-Z0-9_]*(\\[-?\\d+\\])?$"
+    private static final Pattern JSON_PATH_SEGMENT_PATTERN = Pattern.compile(
+            "^[a-zA-Z_][a-zA-Z0-9_]*(\\[(?:-?\\d+|\\*)\\])?$"
     );
 
     // Policy properties (set via Synapse reflection from artifact.j2)
@@ -84,6 +84,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
     private boolean toolsIsJson = SemanticToolFilteringConstants.DEFAULT_TOOLS_IS_JSON;
 
     private EmbeddingProviderService embeddingProvider;
+    private ToolsPathSpec parsedToolsPathSpec;
 
     // ---------- Lifecycle ----------
 
@@ -133,8 +134,16 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         // Validate toolsJSONPath
         if (toolsIsJson && !isValidSimpleJSONPath(toolsJSONPath)) {
             log.error("Invalid toolsJSONPath: " + toolsJSONPath
-                    + ". Only simple dotted paths with optional array indices are supported "
-                    + "(e.g., '$.tools', '$.data.items', '$.results[0].tools').");
+                    + ". Only simple dotted paths with optional array indices or a single "
+                    + "iterator wildcard are supported (e.g., '$.tools', '$.data.items', "
+                    + "'$.results[0].tools', '$.tools[*].function').");
+        } else if (toolsIsJson) {
+            parsedToolsPathSpec = validateAndParseToolsJSONPath(toolsJSONPath);
+            if (parsedToolsPathSpec == null) {
+                log.error("Invalid toolsJSONPath: " + toolsJSONPath
+                        + ". The iterator wildcard must terminate a path segment before an optional "
+                        + "nested object path (e.g., '$.tools[*].function').");
+            }
         }
 
         if (logger.isDebugEnabled()) {
@@ -218,8 +227,15 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         // Parse as JSON object using Gson
         JsonObject requestBody = JsonParser.parseString(jsonContent).getAsJsonObject();
 
-        // Extract tools array using path navigation
-        JsonElement toolsElement = readAtPath(requestBody, toolsJSONPath);
+        if (parsedToolsPathSpec == null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Validated toolsJSONPath is unavailable - skipping tool filtering.");
+            }
+            return true;
+        }
+
+        ToolsPathSpec toolsPathSpec = parsedToolsPathSpec;
+        JsonElement toolsElement = readAtPath(requestBody, toolsPathSpec.getArrayPath());
         JsonArray toolsArray = (toolsElement != null && toolsElement.isJsonArray())
                 ? toolsElement.getAsJsonArray() : null;
 
@@ -251,22 +267,18 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         int availableSlots = Math.max(0, maxToolsPerAPI - currentCachedCount);
         int newToolIndex = 0;
 
-        for (int i = 0; i < toolsArray.size(); i++) {
-            JsonElement toolRaw = toolsArray.get(i);
-            if (!toolRaw.isJsonObject()) {
-                continue;
-            }
-            JsonObject toolObj = toolRaw.getAsJsonObject();
-
-            String toolDesc = extractToolDescription(toolObj);
+        List<JsonToolEntry> toolEntries = extractJsonToolEntries(toolsArray, toolsPathSpec);
+        for (JsonToolEntry toolEntry : toolEntries) {
+            JsonObject toolObj = toolEntry.getInspect();
+            ToolMetadata toolMetadata = extractToolMetadata(toolObj);
+            String toolName = toolMetadata.getName();
+            String toolDesc = buildToolEmbeddingText(toolMetadata);
             if (toolDesc == null || toolDesc.isEmpty()) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("No description found for tool - skipping.");
                 }
                 continue;
             }
-
-            String toolName = getStringOr(toolObj, "name", "");
             String cacheKey = getCacheKey(toolDesc);
 
             // Try cache first
@@ -289,7 +301,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
             }
 
             double similarity = calculateCosineSimilarity(queryEmbedding, toolEmbedding);
-            toolsWithScores.add(new ToolWithScore(toolObj, similarity));
+            toolsWithScores.add(new ToolWithScore(toolEntry.getOriginal(), similarity));
         }
 
         // Bulk add to cache
@@ -308,7 +320,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         List<JsonObject> filteredTools = filterTools(toolsWithScores);
 
         if (logger.isDebugEnabled()) {
-            logger.debug("Filtered tools: original=" + toolsArray.size()
+            logger.debug("Filtered tools: original=" + toolEntries.size()
                     + ", filtered=" + filteredTools.size()
                     + ", selectionMode=" + selectionMode);
         }
@@ -318,7 +330,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         for (JsonObject tool : filteredTools) {
             filteredArray.add(tool);
         }
-        updateToolsInRequestBody(requestBody, toolsJSONPath, filteredArray);
+        updateToolsInRequestBody(requestBody, toolsPathSpec.getArrayPath(), filteredArray);
 
         // Replace the payload
         String modifiedBody = requestBody.toString();
@@ -481,7 +493,12 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         if (toolsIsJson) {
             // Tools in JSON format - parse with Gson
             JsonObject requestBody = JsonParser.parseString(content).getAsJsonObject();
-            JsonElement toolsElement = readAtPath(requestBody, toolsJSONPath);
+            if (parsedToolsPathSpec == null) {
+                return true;
+            }
+
+            ToolsPathSpec toolsPathSpec = parsedToolsPathSpec;
+            JsonElement toolsElement = readAtPath(requestBody, toolsPathSpec.getArrayPath());
             JsonArray toolsArray = (toolsElement != null && toolsElement.isJsonArray())
                     ? toolsElement.getAsJsonArray() : null;
 
@@ -496,18 +513,15 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
             int availableSlots = Math.max(0, cacheLimits[1] - embeddingCache.getAPICacheSize(apiId));
             int newToolIndex = 0;
 
-            for (int i = 0; i < toolsArray.size(); i++) {
-                JsonElement toolRaw = toolsArray.get(i);
-                if (!toolRaw.isJsonObject()) {
-                    continue;
-                }
-                JsonObject toolObj = toolRaw.getAsJsonObject();
-                String toolDesc = extractToolDescription(toolObj);
+            List<JsonToolEntry> toolEntries = extractJsonToolEntries(toolsArray, toolsPathSpec);
+            for (JsonToolEntry toolEntry : toolEntries) {
+                JsonObject toolObj = toolEntry.getInspect();
+                ToolMetadata toolMetadata = extractToolMetadata(toolObj);
+                String toolName = toolMetadata.getName();
+                String toolDesc = buildToolEmbeddingText(toolMetadata);
                 if (toolDesc == null || toolDesc.isEmpty()) {
                     continue;
                 }
-
-                String toolName = getStringOr(toolObj, "name", "");
                 String cacheKey = getCacheKey(toolDesc);
 
                 double[] toolEmbedding;
@@ -523,7 +537,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
                 }
 
                 double similarity = calculateCosineSimilarity(queryEmbedding, toolEmbedding);
-                toolsWithScores.add(new ToolWithScore(toolObj, similarity));
+                toolsWithScores.add(new ToolWithScore(toolEntry.getOriginal(), similarity));
             }
 
             if (!toolEntriesToCache.isEmpty()) {
@@ -539,7 +553,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
             for (JsonObject tool : filteredTools) {
                 filteredArray.add(tool);
             }
-            updateToolsInRequestBody(requestBody, toolsJSONPath, filteredArray);
+            updateToolsInRequestBody(requestBody, toolsPathSpec.getArrayPath(), filteredArray);
 
             String modifiedBody = requestBody.toString();
             try {
@@ -702,6 +716,106 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
     }
 
     /**
+     * Navigates a relative JSON path on a parsed JsonElement.
+     * Supports dotted paths with optional numeric indices, but not iterator wildcards.
+     *
+     * @param root the root JSON element
+     * @param path the relative path (e.g., "function", "items[0].tool")
+     * @return the element at the path, or null if not found
+     */
+    private JsonElement readRelativePath(JsonElement root, String path) {
+        if (root == null || root.isJsonNull()) {
+            return null;
+        }
+        if (path == null || path.isEmpty()) {
+            return root;
+        }
+
+        String[] parts = path.split("\\.");
+        JsonElement current = root;
+        for (String part : parts) {
+            if (part.contains("[*]")) {
+                return null;
+            }
+            if (current == null || current.isJsonNull()) {
+                return null;
+            }
+            int openIdx = part.indexOf('[');
+            if (openIdx != -1 && part.endsWith("]")) {
+                String field = part.substring(0, openIdx);
+                int arrayIndex = Integer.parseInt(part.substring(openIdx + 1, part.length() - 1));
+                if (!current.isJsonObject()) {
+                    return null;
+                }
+                JsonElement arr = current.getAsJsonObject().get(field);
+                if (arr == null || !arr.isJsonArray()) {
+                    return null;
+                }
+                JsonArray jsonArray = arr.getAsJsonArray();
+                if (arrayIndex < 0) {
+                    arrayIndex = jsonArray.size() + arrayIndex;
+                }
+                if (arrayIndex < 0 || arrayIndex >= jsonArray.size()) {
+                    return null;
+                }
+                current = jsonArray.get(arrayIndex);
+            } else {
+                if (!current.isJsonObject()) {
+                    return null;
+                }
+                current = current.getAsJsonObject().get(part);
+            }
+        }
+        return current;
+    }
+
+    private ToolsPathSpec validateAndParseToolsJSONPath(String path) {
+        if (!isValidSimpleJSONPath(path)) {
+            return null;
+        }
+
+        int wildcardIdx = path.indexOf("[*]");
+        if (wildcardIdx == -1) {
+            return new ToolsPathSpec(path, null);
+        }
+
+        String arrayPath = path.substring(0, wildcardIdx);
+        String suffix = path.substring(wildcardIdx + 3);
+        if (suffix.isEmpty()) {
+            return new ToolsPathSpec(arrayPath, null);
+        }
+        if (!suffix.startsWith(".")) {
+            return null;
+        }
+
+        return new ToolsPathSpec(arrayPath, suffix.substring(1));
+    }
+
+    private List<JsonToolEntry> extractJsonToolEntries(JsonArray toolsArray, ToolsPathSpec toolsPathSpec) {
+        List<JsonToolEntry> toolEntries = new ArrayList<>();
+        for (int i = 0; i < toolsArray.size(); i++) {
+            JsonElement toolRaw = toolsArray.get(i);
+            if (!toolRaw.isJsonObject()) {
+                continue;
+            }
+
+            JsonObject originalTool = toolRaw.getAsJsonObject();
+            JsonObject inspectTool = originalTool;
+            if (toolsPathSpec.getIteratedObjectSubpath() != null
+                    && !toolsPathSpec.getIteratedObjectSubpath().isEmpty()) {
+                JsonElement nestedTool = readRelativePath(originalTool, toolsPathSpec.getIteratedObjectSubpath());
+                if (nestedTool == null || !nestedTool.isJsonObject()) {
+                    continue;
+                }
+                inspectTool = nestedTool.getAsJsonObject();
+            }
+
+            toolEntries.add(new JsonToolEntry(originalTool, inspectTool));
+        }
+        return toolEntries;
+    }
+
+    /**
      * Returns the string value of a property from a JsonObject, or a default value.
      *
      * @param obj          the JSON object
@@ -720,41 +834,58 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         return defaultValue;
     }
 
-    /**
-     * Extracts description text from a tool JSON object.
-     * Tries common fields: description, desc, summary, info, then function.description.
-     *
-     * @param tool the tool JSON object
-     * @return the description text, or null if not found
-     */
-    private String extractToolDescription(JsonObject tool) {
-        // Try common description fields
+    private ToolMetadata extractToolMetadata(JsonObject tool) {
+        String name = getStringOr(tool, "name", "");
+        String description = "";
+
         String[] fields = {"description", "desc", "summary", "info"};
         for (String field : fields) {
             if (tool.has(field)) {
-                String desc = getStringOr(tool, field, "");
-                if (!desc.isEmpty()) {
-                    return desc;
+                description = getStringOr(tool, field, "");
+                if (!description.isEmpty()) {
+                    break;
                 }
             }
         }
 
-        String name = getStringOr(tool, "name", "");
-
-        // Check for OpenAI function format: { "function": { "description": "..." } }
+        // Support wrapper objects such as { "type": "function", "function": { ... } }
         if (tool.has("function") && tool.get("function").isJsonObject()) {
             JsonObject function = tool.getAsJsonObject("function");
-            String desc = getStringOr(function, "description", "");
-            if (!desc.isEmpty()) {
-                if (!name.isEmpty()) {
-                    return name + ": " + desc;
+            if (name.isEmpty()) {
+                name = getStringOr(function, "name", "");
+            }
+            if (description.isEmpty()) {
+                for (String field : fields) {
+                    if (function.has(field)) {
+                        description = getStringOr(function, field, "");
+                        if (!description.isEmpty()) {
+                            break;
+                        }
+                    }
                 }
-                return desc;
             }
         }
 
-        // Fallback to name
-        return name.isEmpty() ? null : name;
+        return new ToolMetadata(name, description);
+    }
+
+    private String buildToolEmbeddingText(ToolMetadata toolMetadata) {
+        if (toolMetadata == null) {
+            return null;
+        }
+        String name = toolMetadata.getName();
+        String description = toolMetadata.getDescription();
+
+        if (name != null && !name.isEmpty() && description != null && !description.isEmpty()) {
+            return name + ": " + description;
+        }
+        if (description != null && !description.isEmpty()) {
+            return description;
+        }
+        if (name != null && !name.isEmpty()) {
+            return name;
+        }
+        return null;
     }
 
     /**
@@ -1049,6 +1180,7 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
 
     /**
      * Validates that a JSONPath is a simple dotted path with optional array indices.
+     * Allows a single iterator wildcard segment such as "$.tools[*].function".
      */
     private boolean isValidSimpleJSONPath(String path) {
         if (path == null || path.isEmpty()) {
@@ -1057,7 +1189,19 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
         if (!path.startsWith("$.")) {
             return false;
         }
-        return SIMPLE_JSON_PATH_PATTERN.matcher(path).matches();
+        String[] parts = path.substring(2).split("\\.");
+        int wildcardCount = 0;
+
+        for (String part : parts) {
+            if (part.isEmpty() || !JSON_PATH_SEGMENT_PATTERN.matcher(part).matches()) {
+                return false;
+            }
+            if (part.contains("[*]")) {
+                wildcardCount++;
+            }
+        }
+
+        return wildcardCount <= 1;
     }
 
     // ---------- Inner Classes ----------
@@ -1080,6 +1224,60 @@ public class SemanticToolFiltering extends AbstractMediator implements ManagedLi
 
         double getScore() {
             return score;
+        }
+    }
+
+    private static class JsonToolEntry {
+        private final JsonObject original;
+        private final JsonObject inspect;
+
+        JsonToolEntry(JsonObject original, JsonObject inspect) {
+            this.original = original;
+            this.inspect = inspect;
+        }
+
+        JsonObject getOriginal() {
+            return original;
+        }
+
+        JsonObject getInspect() {
+            return inspect;
+        }
+    }
+
+    private static class ToolMetadata {
+        private final String name;
+        private final String description;
+
+        ToolMetadata(String name, String description) {
+            this.name = name;
+            this.description = description;
+        }
+
+        String getName() {
+            return name;
+        }
+
+        String getDescription() {
+            return description;
+        }
+    }
+
+    private static class ToolsPathSpec {
+        private final String arrayPath;
+        private final String iteratedObjectSubpath;
+
+        ToolsPathSpec(String arrayPath, String iteratedObjectSubpath) {
+            this.arrayPath = arrayPath;
+            this.iteratedObjectSubpath = iteratedObjectSubpath;
+        }
+
+        String getArrayPath() {
+            return arrayPath;
+        }
+
+        String getIteratedObjectSubpath() {
+            return iteratedObjectSubpath;
         }
     }
 

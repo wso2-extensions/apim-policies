@@ -35,7 +35,7 @@ Selects all tools whose semantic similarity score exceeds a configurable thresho
 
 Tools and queries are extracted from JSON payloads using JSONPath expressions:
 - **Query**: Extracted via `queryJSONPath` (default: `$.messages[-1].content`)
-- **Tools**: Extracted via `toolsJSONPath` (default: `$.tools`)
+- **Tools**: Extracted via `toolsJSONPath` (default: `$.tools`). This can point to the array itself, such as `$.tools`, or to the iterated object inside each array item, such as `$.tools[*].function`
 
 ### Text Format
 
@@ -218,6 +218,58 @@ embedding_model = "text-embedding-3-small"
 ```
 
 The policy will filter down to the 3 most relevant tools (e.g., `get_weather`, `book_venue`, `calendar_add`) based on semantic similarity to the query.
+
+### Example: OpenAI/Mistral-style Function Wrappers
+
+Use an iterator path when each tool is wrapped and the actual metadata lives under `function`:
+
+| Field                | Example                 |
+|----------------------|-------------------------|
+| `Selection Mode`     | `By Rank`               |
+| `Limit`              | `2`                     |
+| `Query JSON Path`    | `$.messages[0].content` |
+| `Tools JSON Path`    | `$.tools[*].function`   |
+| `User Query Is JSON` | `true`                  |
+| `Tools Is JSON`      | `true`                  |
+
+Example request:
+
+```json
+{
+  "model": "mistral-large-latest",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What are the tools you see and their names?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get current weather"
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "send_email",
+        "description": "Send email notification"
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "calculate_tax",
+        "description": "Calculate sales tax"
+      }
+    }
+  ]
+}
+```
+
+The policy reads `name` and `description` from each `function` object, but preserves the original wrapper format in the forwarded request after filtering.
 
 ### Example: By Threshold Mode
 

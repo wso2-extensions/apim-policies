@@ -58,7 +58,7 @@
     {
       "name": "toolsJSONPath",
       "displayName": "Tools JSON Path",
-      "description": "JSONPath expression to extract the tools array from the request body (used when toolsIsJson is true).",
+      "description": "JSONPath expression to extract the tools definition from the request body (used when toolsIsJson is true). It can point to the array itself, such as $.tools, or to the iterated object inside each array item, such as $.tools[*].function.",
       "type": "String",
       "defaultValue": "$.tools",
       "allowedValues": [],
