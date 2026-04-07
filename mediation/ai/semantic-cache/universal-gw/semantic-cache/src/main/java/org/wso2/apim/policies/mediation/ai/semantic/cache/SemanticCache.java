@@ -189,6 +189,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         String retrievedResponse = vectorDBProvider.retrieve(embeddings, filter);
         CacheableResponse cachedResponse = null;
         if (retrievedResponse != null) {
+            logger.debug("Cache hit found for the request - serving cached response.");
             messageContext.setProperty(SemanticCacheConstants.REQUEST_CACHE_HIT, true);
             cachedResponse = gson.fromJson(retrievedResponse, CacheableResponse.class);
         }
@@ -277,6 +278,7 @@ public class SemanticCache extends AbstractMediator implements ManagedLifecycle 
         Map<String, Object> headerProperties = cachedResponse.getHeaderProperties();
         if (headerProperties != null) {
             Map<String, Object> clonedMap = new HashMap<>(headerProperties);
+            clonedMap.put("X-Cache-Status", "HIT");
             msgCtx.setProperty(org.apache.axis2.context.MessageContext.TRANSPORT_HEADERS, clonedMap);
             msgCtx.setProperty(Constants.Configuration.MESSAGE_TYPE,
                     clonedMap.get(Constants.Configuration.MESSAGE_TYPE));
