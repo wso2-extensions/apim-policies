@@ -52,7 +52,7 @@
         <org.apache.felix.version>5.1.9</org.apache.felix.version>
         <synapse.version>4.1.0-wso2v28</synapse.version>
         <nexus.staging.plugin.version>1.6.13</nexus.staging.plugin.version>
-        <commons-lang3.version>3.13.0</commons-lang3.version>
+        <commons-lang3.version>3.18.0</commons-lang3.version>
         <jackson.version>2.19.0</jackson.version>
         <com.jayway.jsonpath.version>2.9.0.wso2v1</com.jayway.jsonpath.version>
         <json.orbit.version>3.0.0.wso2v6</json.orbit.version>
