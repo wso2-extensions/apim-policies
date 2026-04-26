@@ -79,6 +79,20 @@ public class RegexGuardrail extends AbstractMediator implements ManagedLifecycle
             logger.debug("Beginning payload validation.");
         }
 
+        if (messageContext.isResponse()) {
+            Object httpSC = ((Axis2MessageContext) messageContext).getAxis2MessageContext()
+                    .getProperty("HTTP_SC");
+            if (httpSC instanceof Number) {
+                int statusCode = ((Number) httpSC).intValue();
+                if (statusCode < 200 || statusCode >= 300) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Skipping guardrail validation for non-2xx response: " + statusCode);
+                    }
+                    return true;
+                }
+            }
+        }
+
         try {
             boolean validationResult = validatePayload(messageContext);
             boolean finalResult = invert != validationResult;
